@@ -21,9 +21,19 @@ const MARKER_END = '<!-- nt-window-title:end -->';
 /**
  * Matches a whole injected block including its indentation and trailing newline,
  * so stripping restores the file byte-for-byte.
+ *
+ * The hash pattern is deliberately wider than the 12 lowercase hex characters we
+ * currently emit: if a future version changes the hash length or alphabet, every
+ * installation patched by an older version must still be strippable. Detection
+ * (`isPatched`) is derived from this same source so the two can never disagree —
+ * a block we can see but not strip would accumulate duplicates on every apply.
  */
-const MARKER_BLOCK =
-	/[ \t]*<!-- nt-window-title:begin [\da-f]{12} -->[\S\s]*?<!-- nt-window-title:end -->\n?/g;
+const MARKER_BLOCK_SOURCE = String.raw`[ \t]*<!-- nt-window-title:begin [\dA-Za-z]{4,64} -->[\S\s]*?<!-- nt-window-title:end -->\n?`;
+
+const MARKER_BLOCK = new RegExp(MARKER_BLOCK_SOURCE, 'g');
+
+/** Landmarks a workbench page must still have after stripping. */
+const ESSENTIAL_LANDMARKS: readonly string[] = ['</head>', '<body', '</html>'];
 
 export type PatchState =
 	/** Markers absent — nothing of ours is installed. */
@@ -94,7 +104,21 @@ export function stripPatch(html: string): string {
 }
 
 export function isPatched(html: string): boolean {
-	return html.includes(MARKER_BEGIN_PREFIX);
+	// Same pattern as stripPatch, so anything we detect is something we can remove.
+	return new RegExp(MARKER_BLOCK_SOURCE).test(html);
+}
+
+/**
+ * Whether a page still looks like a workbench document.
+ *
+ * `MARKER_BLOCK` is lazy, so if another tool damages one of our end markers the
+ * match runs on to the *next* end marker and swallows everything between —
+ * `</head>`, `<body>` and VS Code's own startup script included. Writing that
+ * result would leave an editor that does not boot, so the removal path checks
+ * before it writes rather than trusting the strip.
+ */
+export function looksLikeWorkbench(html: string): boolean {
+	return ESSENTIAL_LANDMARKS.every((landmark) => html.includes(landmark));
 }
 
 function block(indent: string, hash: string, tag: string): string {
@@ -225,6 +249,37 @@ export function applyPatch(target: PatchTarget, assets: HudAssets, backupPath: s
 	return true;
 }
 
+/**
+ * Restores the workbench page from the backup taken before the first patch, and
+ * deletes our assets. The escape hatch for when the page has been damaged badly
+ * enough that stripping cannot be trusted — without this the backup would be
+ * write-only, which is worse than no backup because it makes the risky path feel
+ * covered.
+ */
+export function restoreFromBackup(target: PatchTarget, backupPath: string): void {
+	if (!fs.existsSync(backupPath)) {
+		throw new PatchError('ioFailure', `No backup to restore from at ${backupPath}.`);
+	}
+
+	const backup = readText(backupPath);
+	if (!looksLikeWorkbench(backup) || isPatched(backup)) {
+		throw new PatchError('unexpectedLayout', `The backup at ${backupPath} is not a clean page.`);
+	}
+
+	writeAtomic(target.htmlPath, backup);
+	for (const assetPath of [target.cssPath, target.scriptPath]) {
+		try {
+			fs.rmSync(assetPath, { force: true });
+		} catch (error) {
+			throw new PatchError(
+				'ioFailure',
+				`Could not delete ${assetPath} (${describe(error)}).`,
+				error
+			);
+		}
+	}
+}
+
 /** Reverts the patch. Returns false when there was nothing installed. */
 export function removePatch(target: PatchTarget): boolean {
 	const html = readText(target.htmlPath);
@@ -235,7 +290,14 @@ export function removePatch(target: PatchTarget): boolean {
 	}
 
 	if (isPatched(html)) {
-		writeAtomic(target.htmlPath, stripPatch(html));
+		const stripped = stripPatch(html);
+		if (!looksLikeWorkbench(stripped)) {
+			throw new PatchError(
+				'unexpectedLayout',
+				`Refusing to write ${target.htmlPath}: removing our blocks would also remove part of the page, so its markers have been altered by something else. Restore it from a backup or reinstall VS Code.`
+			);
+		}
+		writeAtomic(target.htmlPath, stripped);
 	}
 
 	for (const assetPath of [target.cssPath, target.scriptPath]) {

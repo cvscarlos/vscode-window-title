@@ -47,6 +47,185 @@ function pillRule(css: string): string {
 	return css.slice(start, css.indexOf('}', start));
 }
 
+/**
+ * Executes the generated script against a stub DOM, so tests can assert what it
+ * does rather than what it contains. Only the handful of DOM APIs the script
+ * actually uses are implemented.
+ */
+function runGeneratedScript(
+	script: string,
+	options: { titleBarExists: boolean }
+): {
+	observers: { target: { className: string }; options: unknown; callback: () => void }[];
+	addTitleBar: () => void;
+	fireFocus: () => void;
+	notifyObservers: () => void;
+	pill: () => { id: string; textContent: string } | undefined;
+	removePill: () => void;
+} {
+	interface Node {
+		id: string;
+		className: string;
+		textContent: string;
+		isConnected: boolean;
+		parentElement: Node | undefined;
+		children: Node[];
+		setAttribute: (name: string, value: string) => void;
+		append: (child: Node) => void;
+		prepend: (child: Node) => void;
+		appendChild: (child: Node) => void;
+		classList: { add: () => void; remove: () => void; contains: () => boolean };
+		getBoundingClientRect: () => { width: number; height: number };
+		offsetWidth: number;
+		offsetHeight: number;
+		querySelector: (selector: string) => Node | undefined;
+	}
+
+	const observers: { target: { className: string }; options: unknown; callback: () => void }[] = [];
+	const focusHandlers: (() => void)[] = [];
+	const timers: (() => void)[] = [];
+
+	const makeNode = (className = ''): Node => {
+		const node: Node = {
+			id: '',
+			className,
+			textContent: '',
+			isConnected: true,
+			parentElement: undefined,
+			children: [],
+			setAttribute: () => {},
+			append: (child) => {
+				node.children.push(child);
+				child.parentElement = node;
+			},
+			prepend: (child) => {
+				node.children.unshift(child);
+				child.parentElement = node;
+			},
+			appendChild: (child) => {
+				node.children.push(child);
+				child.parentElement = node;
+			},
+			classList: { add: () => {}, remove: () => {}, contains: () => false },
+			getBoundingClientRect: () => ({ width: 100, height: 20 }),
+			offsetWidth: 100,
+			offsetHeight: 20,
+			querySelector: (selector) => descendants(node).find((n) => matches(n, selector)),
+		};
+		return node;
+	};
+
+	const descendants = (node: Node): Node[] =>
+		node.children.flatMap((child) => [child, ...descendants(child)]);
+
+	const matches = (node: Node, selector: string): boolean =>
+		selector
+			.split(' ')
+			.at(-1)!
+			.split('.')
+			.filter(Boolean)
+			.every((part) => node.className.split(' ').includes(part));
+
+	const workbench = makeNode('monaco-workbench');
+	const body = makeNode('');
+	body.append(workbench);
+
+	const titleBarContainer = makeNode('titlebar-container');
+	const titleBarRight = makeNode('titlebar-right');
+	titleBarContainer.append(titleBarRight);
+	const titleBarPart = makeNode('part titlebar');
+	titleBarPart.append(titleBarContainer);
+
+	const addTitleBar = (): void => workbench.append(titleBarPart);
+	if (options.titleBarExists) {
+		addTitleBar();
+	}
+
+	const all = (): Node[] => [body, ...descendants(body)];
+
+	const documentStub = {
+		body,
+		title: 'stub',
+		hasFocus: () => true,
+		createElement: () => makeNode(''),
+		querySelector: (selector: string) => all().find((n) => matches(n, selector)),
+		querySelectorAll: (selector: string) => all().filter((n) => matches(n, selector)),
+		createTreeWalker: () => ({ nextNode: () => {} }),
+	};
+
+	const sandbox = {
+		document: documentStub,
+		window: {
+			addEventListener: (event: string, handler: () => void) => {
+				if (event === 'focus') {
+					focusHandlers.push(handler);
+				}
+			},
+		},
+		setTimeout: (fn: () => void) => {
+			timers.push(fn);
+			return 0;
+		},
+		clearTimeout: () => {},
+		MutationObserver: class {
+			constructor(private readonly callback: () => void) {}
+			observe(target: Node, opts: unknown) {
+				observers.push({ target, options: opts, callback: this.callback });
+			}
+			disconnect() {
+				// Nothing to undo in the stub.
+			}
+		},
+		NodeFilter: { SHOW_TEXT: 4 },
+		globalThis: {} as Record<string, unknown>,
+		Date,
+		String,
+		RegExp,
+		Number,
+	};
+
+	const run = new Function(...Object.keys(sandbox), script);
+	run(...Object.values(sandbox));
+
+	// The script defers its first render; run the deferred work.
+	const pending = [...timers];
+	timers.length = 0;
+	for (const timer of pending) {
+		timer();
+	}
+
+	const findPill = (): Node | undefined =>
+		all().find((n) => n.id === 'nt-window-title-pill' && n.parentElement !== undefined);
+
+	return {
+		observers,
+		addTitleBar,
+		fireFocus: () => {
+			for (const handler of focusHandlers) {
+				handler();
+			}
+			const pending = [...timers];
+			timers.length = 0;
+			for (const timer of pending) {
+				timer();
+			}
+		},
+		notifyObservers: () => {
+			for (const observer of observers) {
+				observer.callback();
+			}
+		},
+		pill: findPill,
+		removePill: () => {
+			const pill = findPill();
+			if (pill?.parentElement) {
+				pill.parentElement.children = pill.parentElement.children.filter((c) => c !== pill);
+				pill.parentElement = undefined;
+			}
+		},
+	};
+}
+
 suite('HUD assets', () => {
 	test('bakes the configuration in, because the renderer cannot read files', () => {
 		const { css, script } = buildHudAssets({ ...BASE, displayMilliseconds: 2500 });
@@ -205,14 +384,36 @@ suite('HUD assets', () => {
 		assert.ok(dark.includes('color: #FFFFFF'), 'navy is dark, so text must be white');
 	});
 
-	test('the pill re-asserts itself when VS Code rebuilds the title bar', () => {
-		const code = codeOnly(buildHudAssets(WITH_PILL).script);
-		assert.ok(code.includes('MutationObserver'));
-		assert.ok(code.includes('childList'));
-		// Never subtree or characterData: the title text changes constantly, so
-		// those would fire continuously instead of only when children change.
-		assert.ok(!code.includes('subtree: true'));
-		assert.ok(!code.includes('characterData'));
+	// This ran as a string check for "MutationObserver" and passed while the
+	// observer was never attached at all: the script is evaluated when the page
+	// body is still empty, so the title bar does not exist yet. Execute the
+	// generated code against a stub DOM so the behaviour is what gets tested.
+	test('the pill observes the title bar even though it appears after the script', () => {
+		const dom = runGeneratedScript(buildHudAssets(WITH_PILL).script, { titleBarExists: false });
+
+		assert.equal(dom.observers.length, 0, 'nothing to observe while the page is empty');
+
+		// VS Code builds the workbench, then the window takes focus.
+		dom.addTitleBar();
+		dom.fireFocus();
+
+		assert.equal(dom.observers.length, 1, 'must attach once the title bar exists');
+		assert.deepEqual(dom.observers[0].options, { childList: true });
+		assert.equal(dom.observers[0].target.className, 'titlebar-right');
+		assert.ok(dom.pill(), 'the pill must be mounted');
+	});
+
+	test('the pill comes back when the title bar drops it', () => {
+		const dom = runGeneratedScript(buildHudAssets(WITH_PILL).script, { titleBarExists: true });
+		dom.fireFocus();
+		assert.ok(dom.pill(), 'mounted initially');
+
+		// What a title-bar rebuild looks like: our element is simply gone.
+		dom.removePill();
+		assert.equal(dom.pill(), undefined);
+
+		dom.notifyObservers();
+		assert.ok(dom.pill(), 'the observer must put it back without a focus event');
 	});
 
 	// The title bar keeps hidden duplicate labels of the window title, so reading

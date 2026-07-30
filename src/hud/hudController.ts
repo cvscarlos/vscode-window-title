@@ -15,6 +15,7 @@ import {
 	readPatchState,
 	removePatch,
 	resolveTarget,
+	restoreFromBackup,
 	type PatchTarget,
 } from './workbenchPatcher';
 
@@ -31,17 +32,18 @@ const ENABLE_DETAIL = [
 	'Consequences:',
 	'• VS Code will warn that its installation “appears to be corrupt”. That is expected — it is VS Code noticing this change — and you can dismiss it permanently.',
 	'• A VS Code update replaces these files; the extension re-applies the change automatically.',
-	'• “Window Title nt: Disable Centered HUD” reverts everything.',
+	'• “Window Title nt: Remove In-Window Display” reverts everything, whichever features are on.',
 ].join('\n');
 
 const FAILURE_HINTS: Record<string, string> = {
 	notWritable:
-		'Your user cannot write to the VS Code installation directory, so the centered HUD could not be installed. The status-bar project name still works.',
+		'Your user cannot write to the VS Code installation directory, so nothing could be shown inside the window. The status-bar project name still works.',
 	unsupported:
-		'This VS Code build keeps its workbench page somewhere unexpected, so the centered HUD could not be installed. The status-bar project name still works.',
+		'This VS Code build keeps its workbench page somewhere unexpected, so nothing could be shown inside the window. The status-bar project name still works.',
 	unexpectedLayout:
-		'The workbench page has an unfamiliar structure, so the centered HUD was not installed. The status-bar project name still works.',
-	ioFailure: 'The centered HUD could not be installed. The status-bar project name still works.',
+		'The workbench page has an unfamiliar structure — most likely another extension has modified it too. Nothing was changed. Try “Window Title nt: Restore Workbench From Backup”.',
+	ioFailure:
+		'The in-window display could not be installed. The status-bar project name still works.',
 };
 
 export class HudController {
@@ -177,8 +179,13 @@ export class HudController {
 		try {
 			await (wanted ? this.install(settings) : this.uninstallIfRecorded());
 		} catch (error) {
-			// A failed uninstall must not leave the flag set forever.
-			if (!wanted) {
+			// Deliberately keep the flag on a failed removal. Clearing it would make
+			// the extension forget it ever modified the installation, orphaning the
+			// patch — and the "corrupt installation" warning — permanently. A stuck
+			// flag only costs one file read per activation, and the next attempt or
+			// the restore command can still clean up. Only an installation that is
+			// gone entirely is safe to forget.
+			if (!wanted && error instanceof PatchError && error.failure === 'unsupported') {
 				await this.recordPatch(false);
 			}
 			this.report(error);
@@ -227,5 +234,26 @@ export class HudController {
 
 	async disable(feature: 'hud' | 'titleBarPill'): Promise<void> {
 		await setFeatureEnabled(feature, false);
+	}
+
+	/** Turns both in-window features off, so one action reverts the installation. */
+	async removeAll(): Promise<void> {
+		await setFeatureEnabled('hud', false);
+		await setFeatureEnabled('titleBarPill', false);
+	}
+
+	/**
+	 * Puts back the page saved before the first patch. For when the page has been
+	 * damaged badly enough that stripping our own blocks is not safe.
+	 */
+	async restore(): Promise<void> {
+		try {
+			restoreFromBackup(this.ensureTarget(), this.backupPath());
+			await this.recordPatch(false);
+			this.log.log('Restored the workbench page from backup.');
+			await this.promptReload('Workbench page restored. Reload the window to pick it up.');
+		} catch (error) {
+			this.report(error);
+		}
 	}
 }

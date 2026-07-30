@@ -23,9 +23,10 @@ export function activate(context: vscode.ExtensionContext): void {
 	};
 
 	const refreshAll = (): void => {
-		refreshBadge();
+		const settings = readSettings();
+		statusBar.update(currentName(settings), settings.statusBar);
 		// Deliberately not awaited: patching must never delay activation.
-		void hud.sync(readSettings());
+		void hud.sync(settings);
 	};
 
 	context.subscriptions.push(
@@ -51,6 +52,8 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand('ntWindowTitle.reapplyInjection', () =>
 			hud.reapply(readSettings())
 		),
+		vscode.commands.registerCommand('ntWindowTitle.removeInWindowDisplay', () => hud.removeAll()),
+		vscode.commands.registerCommand('ntWindowTitle.restoreWorkbench', () => hud.restore()),
 		vscode.commands.registerCommand('ntWindowTitle.showOutput', () => log.show())
 	);
 

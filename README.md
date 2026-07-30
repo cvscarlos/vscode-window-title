@@ -2,7 +2,7 @@
 
 **Know which project a VS Code window belongs to, at a glance.**
 
-When you keep a window open per repository, the folder name buried in the title bar is easy to miss. This extension makes it obvious in two ways:
+When you keep a window open per repository, the folder name buried in the title bar is easy to miss. This extension makes it obvious in three places:
 
 - **A project badge in the status bar** — always visible, cyan by default.
 - **A centered HUD on focus** — the project name flashes over the middle of the window when it gains focus, the way macOS announces a keyboard connecting, then fades out.
@@ -31,17 +31,20 @@ Both features ship in the same injected pair of files, so enabling the second on
 - Changing a HUD setting rewrites the assets and offers a reload.
 - Disabling **both** features reverts everything and deletes the two files.
 - If the installation is not writable by your user (a managed or root-owned install), it reports that and stays off. The status-bar badge is unaffected.
+- The `hud.*` and `titleBarPill.*` settings are **application-scoped**: they can only be set in your own user settings, never by a repository's `.vscode/settings.json`. They configure a machine-wide change to VS Code, so no project gets to make that decision for you. `label` and `statusBar.*` remain per-project.
 
 ## Commands
 
-| Command                                       | Description                                                     |
-| --------------------------------------------- | --------------------------------------------------------------- |
-| `Window Title nt: Enable Centered HUD`        | Asks for confirmation, then patches the installation.           |
-| `Window Title nt: Disable Centered HUD`       | Reverts the patch and deletes the injected files.               |
-| `Window Title nt: Enable Title Bar Pill`      | Shows the project name as a filled pill in the title bar.       |
-| `Window Title nt: Disable Title Bar Pill`     | Removes the pill.                                               |
-| `Window Title nt: Re-apply In-Window Display` | Rewrites the patch — use it if the HUD or pill stops appearing. |
-| `Window Title nt: Show Output`                | Opens the log.                                                  |
+| Command                                          | Description                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `Window Title nt: Enable Centered HUD`           | Asks for confirmation, then patches the installation.                          |
+| `Window Title nt: Disable Centered HUD`          | Reverts the patch and deletes the injected files.                              |
+| `Window Title nt: Enable Title Bar Pill`         | Shows the project name as a filled pill in the title bar.                      |
+| `Window Title nt: Disable Title Bar Pill`        | Removes the pill.                                                              |
+| `Window Title nt: Re-apply In-Window Display`    | Rewrites the patch — use it if the HUD or pill stops appearing.                |
+| `Window Title nt: Remove In-Window Display`      | Turns both in-window features off — one action reverts the installation.       |
+| `Window Title nt: Restore Workbench From Backup` | Puts back the page saved before the first patch, for when it has been damaged. |
+| `Window Title nt: Show Output`                   | Opens the log.                                                                 |
 
 ## Settings
 
@@ -63,6 +66,8 @@ Both features ship in the same injected pair of files, so enabling the second on
 | `ntWindowTitle.titleBarPill.enabled`    | `false`     | Show the project name as a filled pill in the title bar.                                                                                           |
 | `ntWindowTitle.titleBarPill.position`   | `"right"`   | `right`, `center` or `left`. `right` is where VS Code puts its own Update and Sign in pills.                                                       |
 | `ntWindowTitle.titleBarPill.color`      | `""`        | Hex background. Empty uses the theme's button colors, which is what makes it look native. The text color is derived so it stays readable.          |
+| `ntWindowTitle.titleBarPill.fontFamily` | `"mono"`    | `mono` reads well for a project name; `ui` matches the built-in Update and Sign in pills exactly.                                                  |
+| `ntWindowTitle.titleBarPill.bordered`   | `true`      | Outline the pill so it stays visible when your title bar happens to be the same color as it. `false` gives the byte-identical native look.         |
 | `ntWindowTitle.titleBarPill.uppercase`  | `false`     | Render the pill text in capitals.                                                                                                                  |
 
 The announced name is the explicit `label` if set, otherwise the open folder's name, otherwise the workspace name for a multi-root workspace. An empty window announces nothing.

@@ -61,12 +61,17 @@ VS Code 1.130 serves the workbench from `out/vs/code/electron-browser/workbench/
 
 **The CSP is never modified.** Extensions in this space commonly strip or relax it; this one does not need to, and does not.
 
+### Two rules that are easy to break
+
+- **Nothing may assume a workbench element exists at module-evaluation time.** The injected script is referenced from `workbench.html`, so it runs while `<body>` is still empty — the whole workbench DOM is built by JavaScript afterwards. Anything that needs `.part.titlebar` or `.monaco-workbench` has to resolve it lazily and re-resolve later. The pill's `MutationObserver` was originally attached once at startup and therefore never attached at all.
+- **Detection and removal must share one pattern.** `isPatched` and `stripPatch` are both derived from `MARKER_BLOCK_SOURCE`. If detection is the looser of the two, a block can be seen but not stripped, and every subsequent apply adds another one alongside it.
+
 ### Idempotency, staleness and concurrency
 
 Each injected block is delimited by `<!-- nt-window-title:begin <hash> -->` / `<!-- nt-window-title:end -->`, where the hash identifies the exact asset pair. That gives three properties cheaply:
 
 - **Idempotent.** `buildPatchedHtml` strips every existing block before inserting, so patching a patched page is a no-op.
-- **Reversible.** The block pattern includes its own indentation and trailing newline, so `stripPatch` restores the original bytes exactly. A test asserts byte equality against a copy of the real workbench page; a backup of the untouched page is also kept per VS Code build, as a safety net rather than the primary undo path.
+- **Reversible.** The block pattern includes its own indentation and trailing newline, so `stripPatch` restores the original bytes exactly. A test asserts byte equality against a fixture mirroring the real page (tab indentation included), and the round trip has been checked by hand against the shipped 1.130 page. A backup of the untouched page is kept per VS Code build and is readable through _Restore Workbench From Backup_ — a write-only backup would be worse than none, since it makes the risky path feel covered.
 - **Staleness detection.** A patch whose marker hash differs from the assets we would generate now is `stale` and gets refreshed. This is what makes a settings change and an extension upgrade self-healing.
 
 Several windows may sync at once — which is the normal case for this extension, since its whole purpose is telling many open windows apart. No locking is needed: every window strips first and inserts once, so they converge on identical content, and writes are write-then-rename so a partially written `workbench.html` is impossible.
@@ -99,7 +104,7 @@ A VS Code update replaces the whole installation directory, which removes both t
 
 Every configurable value reaches either generated CSS or generated JavaScript running inside VS Code's own renderer, which has `unsafe-eval`. So `settings.ts` is the choke point and nothing untrusted passes it:
 
-- Colors must match a hex pattern, or a theme color id for the badge only (a theme id means nothing inside a plain stylesheet, so the HUD falls back to `var(--vscode-foreground)`).
+- Colors must match a hex pattern or a theme color id. Both the badge and the overlay accept either, since `toCssColor()` maps an id to its custom property and the overlay lives where those properties are defined. The pill needs a hex value specifically, because it derives its text color from luminance.
 - Codicon names must be plain `[a-z0-9-]` identifiers; `$(...)` wrapping is tolerated and unwrapped.
 - Numbers are clamped to explicit ranges, with a fallback for non-finite input.
 - The project name is only ever assigned via `textContent`, never interpolated into markup or code.

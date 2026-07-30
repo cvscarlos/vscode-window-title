@@ -332,11 +332,25 @@ function pillParent() {
 
 function installPill() {
 	let pill = null;
+	let observed = null;
+	const observer = new MutationObserver(function () {
+		render();
+	});
 
 	function render() {
 		const parent = pillParent();
 		if (!parent) {
 			return;
+		}
+
+		// Attach here rather than once at startup: this file is evaluated while the
+		// page body is still empty, so the title bar does not exist yet and an
+		// observer set up then would never attach at all. Re-observing on a changed
+		// parent also survives VS Code replacing the row wholesale.
+		if (observed !== parent) {
+			observer.disconnect();
+			observer.observe(parent, { childList: true });
+			observed = parent;
 		}
 		const name = resolveName();
 		if (!name) {
@@ -363,15 +377,6 @@ function installPill() {
 	}
 
 	render();
-
-	// VS Code rebuilds the title bar on layout and title changes, which would drop
-	// the pill. A childList-only observer on the single parent is effectively free:
-	// it fires when children change, not continuously.
-	const parent = pillParent();
-	if (parent) {
-		new MutationObserver(render).observe(parent, { childList: true });
-	}
-
 	return render;
 }
 

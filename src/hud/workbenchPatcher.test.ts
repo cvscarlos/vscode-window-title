@@ -9,7 +9,9 @@ import {
 	PatchError,
 	readPatchState,
 	removePatch,
+	looksLikeWorkbench,
 	resolveTarget,
+	restoreFromBackup,
 	stripPatch,
 	temporaryPathFor,
 	type PatchTarget,
@@ -84,6 +86,12 @@ function makeFixture(): Fixture {
 	assert.ok(target, 'the fixture layout should be recognized');
 	return { appRoot, target, backupPath: path.join(appRoot, 'backup', 'workbench.html') };
 }
+
+suiteTeardown(() => {
+	// Every makeFixture() call mkdtemps a directory; without this they accumulate
+	// in the repo indefinitely.
+	fs.rmSync(FIXTURE_ROOT, { recursive: true, force: true });
+});
 
 function countOccurrences(haystack: string, needle: string): number {
 	return haystack.split(needle).length - 1;
@@ -240,6 +248,45 @@ suite('workbenchPatcher — installation lifecycle', () => {
 			() => applyPatch(missing, buildHudAssets(ASSET_CONFIG), backupPath),
 			(error: unknown) => error instanceof PatchError && /ENOENT/.test(error.message)
 		);
+	});
+
+	// MARKER_BLOCK is lazy, so a damaged end marker makes the match run on to the
+	// next one and swallow </head>, <body> and VS Code's own startup script. Writing
+	// that leaves an editor that does not boot.
+	test('refuses to write a page that stripping would destroy', () => {
+		const { target } = makeFixture();
+		const patched = buildPatchedHtml(WORKBENCH_HTML, 'aaaaaaaaaaaa');
+		const damaged = patched.replace('<!-- nt-window-title:end -->', '<!-- another-tool -->');
+		fs.writeFileSync(target.htmlPath, damaged, 'utf8');
+
+		assert.equal(looksLikeWorkbench(stripPatch(damaged)), false, 'stripping would gut the page');
+		assert.throws(
+			() => removePatch(target),
+			(error: unknown) => error instanceof PatchError && error.failure === 'unexpectedLayout'
+		);
+		assert.equal(fs.readFileSync(target.htmlPath, 'utf8'), damaged, 'must leave the file alone');
+	});
+
+	test('restores from the backup, which is otherwise write-only', () => {
+		const { target, backupPath } = makeFixture();
+		applyPatch(target, buildHudAssets(ASSET_CONFIG), backupPath);
+		fs.writeFileSync(target.htmlPath, 'garbage', 'utf8');
+
+		restoreFromBackup(target, backupPath);
+		assert.equal(fs.readFileSync(target.htmlPath, 'utf8'), WORKBENCH_HTML);
+		assert.equal(fs.existsSync(target.cssPath), false);
+	});
+
+	// Detection used a bare prefix while stripping required 12 lowercase hex, so a
+	// different hash shape was visible-but-unstrippable and every apply added
+	// another duplicate block.
+	test('a block with a different hash shape is still strippable', () => {
+		const patched = buildPatchedHtml(WORKBENCH_HTML, 'abc123abc123').replace(
+			/begin [\da-f]{12}/,
+			'begin ABCDEF0123456789'
+		);
+		assert.equal(isPatched(patched), true);
+		assert.equal(stripPatch(patched), WORKBENCH_HTML, 'detection and stripping must agree');
 	});
 
 	test('reports a read-only installation as such', () => {

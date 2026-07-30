@@ -11,5 +11,8 @@ Initial release.
 - The HUD reads the resolved name from the status-bar badge through an invisible marker pair, so it stays correct per window without depending on VS Code internals.
 - The patch is idempotent, detects its own staleness after a settings change, and re-applies itself after a VS Code update.
 - The centered overlay mounts inside `.monaco-workbench`, where VS Code defines its theme custom properties, so it now genuinely uses the theme background, border and interface font instead of silently falling back to hardcoded values and a serif face. `hud.fontFamily` chooses between the interface font and a monospace stack, and `hud.color` accepts theme color ids as well as hex.
+- Settings that drive the shared patch are application-scoped, so a repository cannot enable it (and bypass the consent prompt) through workspace settings.
+- Removal refuses to write a page that stripping would damage, and the backup taken before the first patch is now readable via _Restore Workbench From Backup_.
+- Marker detection and removal share one pattern, so a block from a future hash format stays strippable instead of accumulating duplicates.
 - Concurrent patching from several windows uses a per-process scratch path, so their atomic renames cannot collide; every patch error names the underlying errno.
 - Default configuration holds no timers and performs no I/O.

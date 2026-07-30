@@ -147,59 +147,96 @@ export function readableTextOn(hexColor: string): string {
 	return luminance > 0.179 ? '#15151E' : '#FFFFFF';
 }
 
+/**
+ * Settings arrive as raw JSON — the type parameter on `get` is a claim, not a
+ * guarantee. A number where a string belongs used to throw out of `readSettings`,
+ * which propagates out of `activate` and takes the whole extension down, badge
+ * included. Coercing here keeps the "unrecognized input falls back" rule true.
+ */
+function readString(config: vscode.WorkspaceConfiguration, key: string, fallback: string): string {
+	const value = config.get(key);
+	return typeof value === 'string' ? value : fallback;
+}
+
+function readBoolean(
+	config: vscode.WorkspaceConfiguration,
+	key: string,
+	fallback: boolean
+): boolean {
+	const value = config.get(key);
+	return typeof value === 'boolean' ? value : fallback;
+}
+
+function readNumber(config: vscode.WorkspaceConfiguration, key: string, fallback: number): number {
+	const value = config.get(key);
+	return typeof value === 'number' ? value : fallback;
+}
+
 export function readSettings(): Settings {
 	const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
 
 	const statusBarColor = sanitizeColor(
-		config.get<string>('statusBar.color', DEFAULT_STATUS_BAR_COLOR),
+		readString(config, 'statusBar.color', DEFAULT_STATUS_BAR_COLOR),
 		DEFAULT_STATUS_BAR_COLOR
 	);
 
 	// An unset HUD color reuses the status-bar color, so the badge and the overlay
 	// agree by default. Both hex values and theme color ids work, since the overlay
 	// lives inside .monaco-workbench where the --vscode-* properties are defined.
-	const hudColorRaw = config.get<string>('hud.color', '').trim();
-	const hudColor = toCssColor(hudColorRaw === '' ? statusBarColor : hudColorRaw) ?? '';
+	//
+	// Deliberately the GLOBAL status-bar color, not the effective one: the badge is
+	// per-window and may legitimately be set per project, but the overlay is baked
+	// into machine-global assets. Inheriting a workspace value would make the asset
+	// hash differ per window, so every window would see the patch as stale and
+	// re-apply it with its own color, fighting the others.
+	const inheritedColor = sanitizeColor(
+		typeof config.inspect<string>('statusBar.color')?.globalValue === 'string'
+			? (config.inspect<string>('statusBar.color')?.globalValue as string)
+			: DEFAULT_STATUS_BAR_COLOR,
+		DEFAULT_STATUS_BAR_COLOR
+	);
+	const hudColorRaw = readString(config, 'hud.color', '').trim();
+	const hudColor = toCssColor(hudColorRaw === '' ? inheritedColor : hudColorRaw) ?? '';
 
 	// Anything other than left/center falls back to right, where VS Code puts its
 	// own Update and Sign in pills.
-	const pillPosition = config.get<string>('titleBarPill.position', 'right');
+	const pillPosition = readString(config, 'titleBarPill.position', 'right');
 
 	return {
-		label: config.get<string>('label', '').trim(),
+		label: readString(config, 'label', '').trim(),
 		statusBar: {
-			enabled: config.get<boolean>('statusBar.enabled', true),
-			alignment: config.get<string>('statusBar.alignment', 'left') === 'right' ? 'right' : 'left',
+			enabled: readBoolean(config, 'statusBar.enabled', true),
+			alignment: readString(config, 'statusBar.alignment', 'left') === 'right' ? 'right' : 'left',
 			color: statusBarColor,
-			icon: sanitizeCodicon(config.get<string>('statusBar.icon', DEFAULT_ICON)),
+			icon: sanitizeCodicon(readString(config, 'statusBar.icon', DEFAULT_ICON)),
 		},
 		hud: {
-			enabled: config.get<boolean>('hud.enabled', false),
-			showOnWindowOpen: config.get<boolean>('hud.showOnWindowOpen', true),
+			enabled: readBoolean(config, 'hud.enabled', false),
+			showOnWindowOpen: readBoolean(config, 'hud.showOnWindowOpen', true),
 			displayMilliseconds: clampNumber(
-				config.get<number>('hud.displayMilliseconds', DEFAULT_DISPLAY_MILLISECONDS),
+				readNumber(config, 'hud.displayMilliseconds', DEFAULT_DISPLAY_MILLISECONDS),
 				200,
 				10_000,
 				DEFAULT_DISPLAY_MILLISECONDS
 			),
-			position: config.get<string>('hud.position', 'center') === 'top' ? 'top' : 'center',
+			position: readString(config, 'hud.position', 'center') === 'top' ? 'top' : 'center',
 			fontSizePixels: clampNumber(
-				config.get<number>('hud.fontSizePixels', DEFAULT_FONT_SIZE_PIXELS),
+				readNumber(config, 'hud.fontSizePixels', DEFAULT_FONT_SIZE_PIXELS),
 				10,
 				200,
 				DEFAULT_FONT_SIZE_PIXELS
 			),
-			uppercase: config.get<boolean>('hud.uppercase', true),
+			uppercase: readBoolean(config, 'hud.uppercase', true),
 			color: hudColor,
-			fontFamily: config.get<string>('hud.fontFamily', 'ui') === 'mono' ? 'mono' : 'ui',
+			fontFamily: readString(config, 'hud.fontFamily', 'ui') === 'mono' ? 'mono' : 'ui',
 		},
 		titleBarPill: {
-			enabled: config.get<boolean>('titleBarPill.enabled', false),
+			enabled: readBoolean(config, 'titleBarPill.enabled', false),
 			position: pillPosition === 'left' || pillPosition === 'center' ? pillPosition : 'right',
-			color: sanitizeHexColor(config.get<string>('titleBarPill.color', ''), ''),
-			uppercase: config.get<boolean>('titleBarPill.uppercase', false),
-			fontFamily: config.get<string>('titleBarPill.fontFamily', 'mono') === 'ui' ? 'ui' : 'mono',
-			bordered: config.get<boolean>('titleBarPill.bordered', true),
+			color: sanitizeHexColor(readString(config, 'titleBarPill.color', ''), ''),
+			uppercase: readBoolean(config, 'titleBarPill.uppercase', false),
+			fontFamily: readString(config, 'titleBarPill.fontFamily', 'mono') === 'ui' ? 'ui' : 'mono',
+			bordered: readBoolean(config, 'titleBarPill.bordered', true),
 		},
 	};
 }

@@ -283,6 +283,24 @@ suite('HUD assets', () => {
 		assert.ok(rule.includes('background-color: #22D3EE'));
 	});
 
+	// macOS draws its window buttons over the leading edge of the title bar, where
+	// .titlebar-left is empty — so without an inset a left-aligned pill hides under
+	// them. The buttons are OS-drawn, outside the DOM, so this cannot be measured.
+	test('a left-aligned pill clears the macOS window buttons', () => {
+		const left = buildHudAssets({
+			...WITH_PILL,
+			pill: { ...WITH_PILL.pill, position: 'left' },
+		}).css;
+		assert.ok(left.includes('.mac #nt-window-title-pill'));
+		assert.ok(left.includes('margin-left: 80px'));
+
+		// The inset would misalign the other positions, so only left gets it.
+		for (const position of ['right', 'center'] as const) {
+			const css = buildHudAssets({ ...WITH_PILL, pill: { ...WITH_PILL.pill, position } }).css;
+			assert.ok(!css.includes('.mac #nt-window-title-pill'), position + ' needs no inset');
+		}
+	});
+
 	test('an unbordered pill matches the built-in pills exactly', () => {
 		const rule = pillRule(
 			buildHudAssets({ ...WITH_PILL, pill: { ...WITH_PILL.pill, bordered: false } }).css

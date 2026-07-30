@@ -152,6 +152,21 @@ function buildPillCss(pill: PillAssetConfig): string {
 	// fill, so it necessarily contrasts with a title bar of the same color too.
 	const borderColor = pill.bordered ? foreground : background;
 
+	// macOS draws the window buttons over the leading edge of the title bar, and
+	// `.titlebar-left` is empty there, so a left-aligned pill starts at x≈4 and
+	// sits underneath them. The traffic lights are drawn by the OS, outside the
+	// DOM, so their extent cannot be measured — this clears the conventional
+	// ~70px they occupy. Only emitted for the left position, and scoped to the
+	// `mac` class VS Code puts on `.monaco-workbench`.
+	const macTrafficLightInset =
+		pill.position === 'left'
+			? `
+.mac #${PILL_ID} {
+	margin-left: 80px;
+}
+`
+			: '';
+
 	return `
 #${PILL_ID} {
 	display: flex;
@@ -181,7 +196,7 @@ function buildPillCss(pill: PillAssetConfig): string {
 	pointer-events: none;
 	user-select: none;
 }
-`;
+${macTrafficLightInset}`;
 }
 
 function buildHudScript(config: HudAssetConfig): string {

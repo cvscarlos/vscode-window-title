@@ -199,6 +199,7 @@
 		}
 	},
 	"scripts": {
+		"prepare": "git config core.hooksPath .githooks || true",
 		"clean": "rm -rf out",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",

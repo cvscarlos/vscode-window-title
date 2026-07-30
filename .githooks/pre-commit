@@ -1,0 +1,21 @@
+#!/bin/sh
+# Fast gate: type-check, lint and formatting. Deliberately NOT the Mocha suite —
+# that downloads and boots a VS Code build, which is too slow for every commit.
+# The full suite runs on pre-push instead.
+set -e
+
+if [ ! -d node_modules ]; then
+	echo "pre-commit: node_modules missing, skipping checks (run npm install)"
+	exit 0
+fi
+
+echo "pre-commit: type-checking…"
+npx tsc -p ./ --noEmit
+
+echo "pre-commit: linting…"
+npx eslint src
+
+echo "pre-commit: checking formatting…"
+npx prettier --check .
+
+echo "pre-commit: ok"

@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.1.0
+## 1.0.0
 
-Initial release.
+First release.
 
 - Project name badge in the status bar, cyan by default, with configurable side, color and codicon.
 - Optional centered HUD that flashes the project name over the middle of the window when it gains focus, installed by adding a stylesheet and a module script to VS Code's workbench page. Off by default; enabling it explains the consequences first, and disabling it restores the page byte for byte.

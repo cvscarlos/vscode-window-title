@@ -3,7 +3,7 @@
 	"displayName": "Window Title nt",
 	"icon": "images/icon.png",
 	"description": "Announces the project name when a VS Code window gains focus — a centered HUD plus a always-visible status-bar badge",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"publisher": "nokotata",
 	"license": "MIT",
 	"repository": {

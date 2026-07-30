@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"module": "Node16",
+		"target": "ES2022",
+		"outDir": "out",
+		"lib": ["ES2022"],
+		"sourceMap": true,
+		"rootDir": "src",
+		"strict": true,
+		"types": ["node", "mocha"]
+	},
+	"include": ["src"],
+	// Without this, tsc globs **/* and any stray .ts under tmp/ (the repo's scratch
+	// folder) fails the build with TS6059 for being outside rootDir.
+	"exclude": ["node_modules", "out", "tmp", ".vscode-test"]
+}

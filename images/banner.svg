@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" font-family="Inter, &#39;Helvetica Neue&#39;, Arial, sans-serif">
+  
+  <defs>
+    <linearGradient id="tint" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity="0.06"></stop>
+      <stop offset="0.65" stop-color="#22D3EE" stop-opacity="0"></stop>
+    </linearGradient>
+    <linearGradient id="fadeGrad" x1="100%" y1="0%" x2="30%" y2="80%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"></stop>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="1"></stop>
+    </linearGradient>
+    <mask id="artFade">
+      <rect x="700" y="0" width="500" height="400" fill="url(#fadeGrad)"></rect>
+    </mask>
+    <clipPath id="winClip">
+      <rect x="770" y="-6" width="480" height="412" rx="16"></rect>
+    </clipPath>
+  </defs>
+
+  <rect width="1200" height="400" fill="#15151E"></rect>
+  <rect width="1200" height="400" fill="url(#tint)"></rect>
+
+  
+  <g mask="url(#artFade)">
+    <rect x="830" y="-60" width="480" height="412" rx="16" fill="none" stroke="#333A45" stroke-width="1" opacity="0.35"></rect>
+    <rect x="862" y="56" width="480" height="412" rx="16" fill="none" stroke="#333A45" stroke-width="1" opacity="0.35"></rect>
+    <rect x="770" y="-6" width="480" height="412" rx="16" fill="#262B34" stroke="#333A45" stroke-width="1"></rect>
+    <g clip-path="url(#winClip)">
+      
+      <rect x="770" y="-6" width="480" height="28" fill="#1B1E26"></rect>
+      <rect x="1072" y="0" width="108" height="22" rx="6" fill="#22D3EE"></rect>
+      <text x="1126" y="15" text-anchor="middle" font-size="14" font-weight="700" fill="#15151E">payments-api</text>
+      
+      <rect x="770" y="378" width="480" height="28" fill="#1B1E26"></rect>
+      <circle cx="800" cy="388" r="5" fill="#22D3EE"></circle>
+      <text x="814" y="394" font-family="&#39;JetBrains Mono&#39;, &#39;SFMono-Regular&#39;, Menlo, monospace" font-size="18" font-weight="500" fill="#22D3EE">payments-api</text>
+    </g>
+    
+    <g fill="#333A45">
+      <rect x="806" y="66" width="210" height="14" rx="7"></rect>
+      <rect x="806" y="96" width="290" height="14" rx="7"></rect>
+      <rect x="830" y="126" width="170" height="14" rx="7"></rect>
+      <rect x="830" y="156" width="250" height="14" rx="7"></rect>
+    </g>
+    
+    <rect x="816" y="155" width="338" height="90" rx="30" fill="#22D3EE" opacity="0.1"></rect>
+    <rect x="830" y="169" width="310" height="62" rx="20" fill="#262B34" stroke="#22D3EE" stroke-width="2"></rect>
+    <text x="985" y="212" text-anchor="middle" font-size="34" font-weight="700" letter-spacing="1" fill="#22D3EE">PAYMENTS-API</text>
+  </g>
+
+  
+  <g transform="translate(48,96) scale(0.1484375)">
+    <rect x="4" y="4" width="504" height="504" rx="112" fill="#15151E" stroke="#333A45" stroke-width="7"></rect>
+    <rect x="60" y="84" width="392" height="344" rx="40" fill="none" stroke="#6B6B85" stroke-width="24"></rect>
+    <rect x="76" y="208" width="360" height="96" rx="48" fill="#22D3EE"></rect>
+  </g>
+  <text x="48" y="234" font-size="56" font-weight="800" letter-spacing="-1.5" fill="#F5F7FA">Window Title <tspan fill="#22D3EE">nt</tspan></text>
+  <text x="48" y="278" font-size="20" font-weight="400" fill="#9AA3B2">Know which project each window is — announced the moment you focus it.</text>
+</svg>

@@ -1,0 +1,33 @@
+# Secrets & internal (never ship)
+.env
+.claude/**
+.fallow/**
+.superpowers/**
+
+# Source & build tooling
+src/**
+out/**/*.test.js
+**/*.ts
+**/*.map
+**/tsconfig.json
+**/eslint.config.mjs
+.prettierrc.json
+.prettierignore
+.nvmrc
+
+# Editor / test / dev dirs
+.vscode/**
+.vscode-test/**
+**/.vscode-test.*
+tmp/**
+
+# Repo metadata
+.gitignore
+.github/**
+docs/**
+ARCHITECTURE.md
+
+# Icon source + the README/social banner (README loads the banner from a URL;
+# only images/icon.png needs to ship)
+images/*.svg
+images/og-banner.png

@@ -1,0 +1,15 @@
+# Directories
+.claude/
+.fallow/
+.superpowers/
+.vscode-test/
+docs/superpowers/
+node_modules/
+out/
+tmp/
+
+# Files
+.DS_Store
+.env
+Desktop.ini
+Thumbs.db

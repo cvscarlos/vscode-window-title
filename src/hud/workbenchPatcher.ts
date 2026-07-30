@@ -8,7 +8,7 @@ import { CSS_FILE_NAME, SCRIPT_FILE_NAME, type HudAssets } from './assets';
  * file between `electron-sandbox` and `electron-browser`, and some builds ship an
  * `.esm.` variant, so all known spellings are probed.
  */
-export const WORKBENCH_CANDIDATES: readonly string[] = [
+const WORKBENCH_CANDIDATES: readonly string[] = [
 	'out/vs/code/electron-browser/workbench/workbench.html',
 	'out/vs/code/electron-browser/workbench/workbench.esm.html',
 	'out/vs/code/electron-sandbox/workbench/workbench.html',
@@ -56,7 +56,7 @@ export type PatchFailure =
 const PERMISSION_CODES = new Set(['EACCES', 'EPERM', 'EROFS']);
 
 /** A one-line, log-friendly rendering of a filesystem error. */
-export function describe(error: unknown): string {
+function describeError(error: unknown): string {
 	const errno = error as NodeJS.ErrnoException;
 	const parts = [errno?.code, errno?.syscall].filter(Boolean);
 	if (parts.length > 0) {
@@ -162,7 +162,11 @@ function readText(filePath: string): string {
 	try {
 		return fs.readFileSync(filePath, 'utf8');
 	} catch (error) {
-		throw new PatchError('ioFailure', `Could not read ${filePath} (${describe(error)}).`, error);
+		throw new PatchError(
+			'ioFailure',
+			`Could not read ${filePath} (${describeError(error)}).`,
+			error
+		);
 	}
 }
 
@@ -197,7 +201,11 @@ function writeAtomic(filePath: string, content: string): void {
 			);
 		}
 		// Name the errno: "could not write <path>" alone is not diagnosable from a log.
-		throw new PatchError('ioFailure', `Could not write ${filePath} (${describe(error)}).`, error);
+		throw new PatchError(
+			'ioFailure',
+			`Could not write ${filePath} (${describeError(error)}).`,
+			error
+		);
 	}
 }
 
@@ -237,7 +245,7 @@ export function applyPatch(target: PatchTarget, assets: HudAssets, backupPath: s
 		} catch (error) {
 			throw new PatchError(
 				'ioFailure',
-				`Could not write the backup at ${backupPath} (${describe(error)}).`,
+				`Could not write the backup at ${backupPath} (${describeError(error)}).`,
 				error
 			);
 		}
@@ -273,7 +281,7 @@ export function restoreFromBackup(target: PatchTarget, backupPath: string): void
 		} catch (error) {
 			throw new PatchError(
 				'ioFailure',
-				`Could not delete ${assetPath} (${describe(error)}).`,
+				`Could not delete ${assetPath} (${describeError(error)}).`,
 				error
 			);
 		}
@@ -306,7 +314,7 @@ export function removePatch(target: PatchTarget): boolean {
 		} catch (error) {
 			throw new PatchError(
 				'ioFailure',
-				`Could not delete ${assetPath} (${describe(error)}).`,
+				`Could not delete ${assetPath} (${describeError(error)}).`,
 				error
 			);
 		}

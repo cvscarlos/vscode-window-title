@@ -68,7 +68,7 @@ function fontStack(family: HudFontFamily): string {
 		: 'inherit';
 }
 
-export function buildHudCss(config: HudAssetConfig): string {
+function buildHudCss(config: HudAssetConfig): string {
 	const color = config.color === '' ? 'var(--vscode-foreground, #CCCCCC)' : config.color;
 	const verticalAnchor = config.position === 'top' ? 'top: 11vh;' : 'top: 50%;';
 	const textTransform = config.uppercase ? 'uppercase' : 'none';
@@ -184,7 +184,7 @@ function buildPillCss(pill: PillAssetConfig): string {
 `;
 }
 
-export function buildHudScript(config: HudAssetConfig): string {
+function buildHudScript(config: HudAssetConfig): string {
 	// Baked in as a literal because the renderer cannot read files or use the
 	// network: the workbench CSP is `default-src 'none'` with `connect-src` limited
 	// to self/https/ws.

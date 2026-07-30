@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 
 export const CONFIG_SECTION = 'ntWindowTitle';
 
-export const DEFAULT_STATUS_BAR_COLOR = '#22D3EE';
-export const DEFAULT_ICON = 'window';
-export const DEFAULT_DISPLAY_MILLISECONDS = 1100;
-export const DEFAULT_FONT_SIZE_PIXELS = 40;
+const DEFAULT_STATUS_BAR_COLOR = '#22D3EE';
+const DEFAULT_ICON = 'window';
+const DEFAULT_DISPLAY_MILLISECONDS = 1100;
+const DEFAULT_FONT_SIZE_PIXELS = 40;
 
 /**
  * How long the HUD refuses to re-announce after showing. Focus/blur pairs arrive

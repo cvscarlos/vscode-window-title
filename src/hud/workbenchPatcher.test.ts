@@ -54,7 +54,7 @@ const ASSET_CONFIG: HudAssetConfig = {
 	fontSizePixels: 40,
 	uppercase: true,
 	color: '#22D3EE',
-	fontFamily: 'ui',
+	fontFamily: 'mono',
 	showOnWindowOpen: true,
 	pill: {
 		enabled: false,
@@ -62,7 +62,7 @@ const ASSET_CONFIG: HudAssetConfig = {
 		color: '',
 		textColor: '',
 		uppercase: false,
-		fontFamily: 'mono',
+		fontFamily: 'ui',
 		bordered: true,
 	},
 };

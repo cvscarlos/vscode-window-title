@@ -228,14 +228,14 @@ export function readSettings(): Settings {
 			),
 			uppercase: readBoolean(config, 'hud.uppercase', true),
 			color: hudColor,
-			fontFamily: readString(config, 'hud.fontFamily', 'ui') === 'mono' ? 'mono' : 'ui',
+			fontFamily: readString(config, 'hud.fontFamily', 'mono') === 'ui' ? 'ui' : 'mono',
 		},
 		titleBarPill: {
 			enabled: readBoolean(config, 'titleBarPill.enabled', false),
 			position: pillPosition === 'left' || pillPosition === 'center' ? pillPosition : 'right',
 			color: sanitizeHexColor(readString(config, 'titleBarPill.color', ''), ''),
 			uppercase: readBoolean(config, 'titleBarPill.uppercase', false),
-			fontFamily: readString(config, 'titleBarPill.fontFamily', 'mono') === 'ui' ? 'ui' : 'mono',
+			fontFamily: readString(config, 'titleBarPill.fontFamily', 'ui') === 'mono' ? 'mono' : 'ui',
 			bordered: readBoolean(config, 'titleBarPill.bordered', true),
 		},
 	};

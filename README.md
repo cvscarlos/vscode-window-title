@@ -62,11 +62,11 @@ Both features ship in the same injected pair of files, so enabling the second on
 | `ntWindowTitle.hud.fontSizePixels`      | `40`        | HUD text size. Clamped to 10–200.                                                                                                                  |
 | `ntWindowTitle.hud.uppercase`           | `true`      | Render the HUD name in capitals.                                                                                                                   |
 | `ntWindowTitle.hud.color`               | `""`        | Color of the overlay text: a hex color, or a theme color id (`terminal.ansiCyan`) which follows your active theme. Empty reuses `statusBar.color`. |
-| `ntWindowTitle.hud.fontFamily`          | `"ui"`      | `ui` inherits the font VS Code uses for its own interface; `mono` uses a monospace stack.                                                          |
+| `ntWindowTitle.hud.fontFamily`          | `"mono"`    | `ui` inherits the font VS Code uses for its own interface; `mono` uses a monospace stack.                                                          |
 | `ntWindowTitle.titleBarPill.enabled`    | `false`     | Show the project name as a filled pill in the title bar.                                                                                           |
 | `ntWindowTitle.titleBarPill.position`   | `"right"`   | `right`, `center` or `left`. `right` is where VS Code puts its own Update and Sign in pills.                                                       |
 | `ntWindowTitle.titleBarPill.color`      | `""`        | Hex background. Empty uses the theme's button colors, which is what makes it look native. The text color is derived so it stays readable.          |
-| `ntWindowTitle.titleBarPill.fontFamily` | `"mono"`    | `mono` reads well for a project name; `ui` matches the built-in Update and Sign in pills exactly.                                                  |
+| `ntWindowTitle.titleBarPill.fontFamily` | `"ui"`      | `ui` uses the same face as the window title beside it, matching the built-in Update and Sign in pills; `mono` uses a monospace stack.              |
 | `ntWindowTitle.titleBarPill.bordered`   | `true`      | Outline the pill so it stays visible when your title bar happens to be the same color as it. `false` gives the byte-identical native look.         |
 | `ntWindowTitle.titleBarPill.uppercase`  | `false`     | Render the pill text in capitals.                                                                                                                  |
 

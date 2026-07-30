@@ -144,11 +144,11 @@
 					"type": "string",
 					"scope": "application",
 					"enum": [
-						"ui",
-						"mono"
+						"mono",
+						"ui"
 					],
-					"default": "ui",
-					"markdownDescription": "Typeface for the centered overlay. `ui` inherits the font VS Code uses for its own interface, so it matches your editor chrome. `mono` uses a monospace stack."
+					"default": "mono",
+					"markdownDescription": "Typeface for the centered overlay. `mono` uses a monospace stack, which suits a project name announced on its own. `ui` inherits the font VS Code uses for its own interface."
 				},
 				"ntWindowTitle.titleBarPill.enabled": {
 					"type": "boolean",
@@ -183,11 +183,11 @@
 					"type": "string",
 					"scope": "application",
 					"enum": [
-						"mono",
-						"ui"
+						"ui",
+						"mono"
 					],
-					"default": "mono",
-					"markdownDescription": "Typeface for the pill. `mono` uses a monospace stack, which reads well for a project name. `ui` inherits the font VS Code uses for its own interface, matching the built-in Update and Sign in pills exactly."
+					"default": "ui",
+					"markdownDescription": "Typeface for the title-bar pill. `ui` inherits the font VS Code uses for its own interface, so the pill reads as part of the window title next to it — and matches the built-in Update and Sign in pills. `mono` uses a monospace stack."
 				},
 				"ntWindowTitle.titleBarPill.bordered": {
 					"type": "boolean",

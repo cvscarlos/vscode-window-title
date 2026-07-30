@@ -10,7 +10,7 @@ const BASE: HudAssetConfig = {
 	fontSizePixels: 40,
 	uppercase: true,
 	color: '#22D3EE',
-	fontFamily: 'ui',
+	fontFamily: 'mono',
 	showOnWindowOpen: true,
 	pill: {
 		enabled: false,
@@ -18,7 +18,7 @@ const BASE: HudAssetConfig = {
 		color: '',
 		textColor: '',
 		uppercase: false,
-		fontFamily: 'mono',
+		fontFamily: 'ui',
 		bordered: true,
 	},
 };
@@ -252,10 +252,18 @@ suite('HUD assets', () => {
 		assert.ok(code.includes('parentElement'), 'must re-home rather than parent once');
 	});
 
-	test('the pill defaults to monospace and can inherit the workbench font', () => {
-		assert.ok(pillRule(buildHudAssets(WITH_PILL).css).includes('monospace'));
-		const ui = buildHudAssets({ ...WITH_PILL, pill: { ...WITH_PILL.pill, fontFamily: 'ui' } });
-		assert.ok(pillRule(ui.css).includes('font-family: inherit'));
+	// The pill sits beside the window title, so by default it uses the same face as
+	// the title; the overlay is announced on its own, so it is monospace.
+	test('the pill inherits the title font while the overlay is monospace', () => {
+		const { css } = buildHudAssets(WITH_PILL);
+		assert.ok(pillRule(css).includes('font-family: inherit'), 'pill matches the title');
+		assert.ok(css.slice(0, css.indexOf('#nt-window-title-pill')).includes('monospace'));
+
+		const monoPill = buildHudAssets({
+			...WITH_PILL,
+			pill: { ...WITH_PILL.pill, fontFamily: 'mono' },
+		});
+		assert.ok(pillRule(monoPill.css).includes('monospace'));
 	});
 
 	// VS Code's own pills border in their own background color, so the border is

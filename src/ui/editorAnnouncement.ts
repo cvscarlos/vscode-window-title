@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import {
 	isHexColor,
 	readableTextOn,
+	type AnnouncementPosition,
 	type EditorAnnouncementSettings,
 } from '../configuration/settings';
 
@@ -69,7 +70,7 @@ export class EditorAnnouncement {
 		const options = announcementDecoration(name, settings);
 		for (const editor of editors) {
 			editor.setDecorations(this.decoration, [
-				{ range: anchorRange(editor), renderOptions: options },
+				{ range: anchorRange(editor, settings.position), renderOptions: options },
 			]);
 		}
 		this.decorated = editors;
@@ -94,16 +95,38 @@ export class EditorAnnouncement {
 }
 
 /**
- * Where the announcement attaches: the **end** of the first visible line.
+ * How far below the first visible line `'top'` sits.
+ *
+ * Scaled past 100% the attachment is taller than the line box it hangs off, and
+ * the overflow goes upward — on the very first visible line that puts it under
+ * the breadcrumb bar, which paints over it. One line of clearance is enough,
+ * because breadcrumbs are a single row.
+ */
+const TOP_CLEARANCE_LINES = 1;
+
+/**
+ * Where the announcement attaches: the **end** of a line in the viewport.
  *
  * Anchoring at column 0 would push the line's own text to the right and read as
  * if the file had changed. Attaching past the end of the line is the same
  * placement inline blame annotations use, so it reads as an annotation.
+ *
+ * Which line depends on `position`. `'center'` is the default because the middle
+ * of the viewport is clear of both the breadcrumb bar and sticky scroll at the
+ * top, and it is where the eye already is.
  */
-export function anchorRange(editor: vscode.TextEditor): vscode.Range {
-	const firstVisible = editor.visibleRanges[0];
-	const line = firstVisible === undefined ? 0 : firstVisible.start.line;
-	const safeLine = Math.min(line, Math.max(0, editor.document.lineCount - 1));
+export function anchorRange(
+	editor: vscode.TextEditor,
+	position: AnnouncementPosition
+): vscode.Range {
+	const visible = editor.visibleRanges[0];
+	const first = visible === undefined ? 0 : visible.start.line;
+	const last = visible === undefined ? 0 : visible.end.line;
+
+	const line = first + (position === 'top' ? TOP_CLEARANCE_LINES : Math.floor((last - first) / 2));
+
+	const lastLine = Math.max(0, editor.document.lineCount - 1);
+	const safeLine = Math.min(Math.max(line, 0), lastLine);
 	const end = editor.document.lineAt(safeLine).range.end;
 	return new vscode.Range(end, end);
 }

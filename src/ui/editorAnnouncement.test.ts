@@ -10,6 +10,7 @@ const SETTINGS: EditorAnnouncementSettings = {
 	color: '#22D3EE',
 	uppercase: true,
 	fontSizePercent: 220,
+	position: 'center',
 };
 
 suite('announcementDecoration', () => {
@@ -54,25 +55,48 @@ suite('announcementDecoration', () => {
 	});
 });
 
+async function openLines(count: number): Promise<vscode.TextEditor> {
+	const content = Array.from({ length: count }, (_, i) => `const line${i} = ${i};`).join('\n');
+	const document = await vscode.workspace.openTextDocument({ content });
+	return vscode.window.showTextDocument(document, { preview: false });
+}
+
 suite('anchorRange', () => {
 	// Anchoring at column 0 would push the line's own text right and read as if
 	// the file had changed; past the end of the line reads as an annotation.
-	test('is an empty range at the end of the first visible line', async () => {
-		const document = await vscode.workspace.openTextDocument({
-			content: 'const first = 1;\nconst second = 2;\nconst third = 3;\n',
-		});
-		const editor = await vscode.window.showTextDocument(document, { preview: false });
-
-		const range = anchorRange(editor);
-		const firstVisibleLine = editor.visibleRanges[0]?.start.line ?? 0;
+	test('is an empty range past the end of its line', async () => {
+		const editor = await openLines(40);
+		const range = anchorRange(editor, 'center');
 
 		assert.ok(range.isEmpty, 'must not cover any text');
-		assert.equal(range.start.line, firstVisibleLine);
 		assert.equal(
 			range.start.character,
-			document.lineAt(firstVisibleLine).range.end.character,
+			editor.document.lineAt(range.start.line).range.end.character,
 			'must sit past the end of the line'
 		);
+	});
+
+	// A scaled announcement overflows its line box upward, so on the first visible
+	// line the breadcrumb bar paints over it. Neither position may land there.
+	test('never lands on the first visible line', async () => {
+		const editor = await openLines(40);
+		const visible = editor.visibleRanges[0];
+		assert.ok(visible);
+
+		assert.equal(anchorRange(editor, 'top').start.line, visible.start.line + 1);
+		assert.equal(
+			anchorRange(editor, 'center').start.line,
+			visible.start.line + Math.floor((visible.end.line - visible.start.line) / 2)
+		);
+	});
+
+	// A one-line file has no line below the first, so both positions have to clamp
+	// rather than index past the end of the document.
+	test('clamps to the document on a file shorter than the offset', async () => {
+		const editor = await openLines(1);
+
+		assert.equal(anchorRange(editor, 'top').start.line, 0);
+		assert.equal(anchorRange(editor, 'center').start.line, 0);
 	});
 });
 

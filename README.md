@@ -10,7 +10,7 @@ Run **Window Title nt: Announce Project Name** to see it without switching windo
 
 ### One unsupported thing, on purpose
 
-Decoration attachments expose no `fontSize`. Any `fontSizePercent` above 100 is applied by appending a declaration to `textDecoration`, which VS Code passes through as raw CSS. That is **undocumented behaviour**, and it is the only thing in this extension that relies on something Microsoft has not promised.
+Decoration attachments expose no `fontSize`. Any `fontSizePercent` above 100 is applied by appending a declaration to `textDecoration`, which VS Code passes through as raw CSS. That is **undocumented behavior**, and it is the only thing in this extension that relies on something Microsoft has not promised.
 
 It is opt-out (`fontSizePercent: 100`) and it fails soft: if a future VS Code escapes those values, the declaration is simply dropped and the announcement renders at the normal editor size. Nothing breaks, nothing is left behind, and your installation is never modified.
 
@@ -26,26 +26,27 @@ It worked, and it reverted cleanly, but it made VS Code report **"Your Code inst
 
 If you want that back, the honest options are a fork of VS Code, or an extension like Custom UI Style that makes the same trade explicitly. This one will not modify your installation.
 
-The supported substitute is a **text-editor decoration**: the project name is drawn at the end of the first visible line for about a second. It is the only surface in the API that renders where you are actually looking without taking focus, changing the editor layout, or leaving anything behind.
+The supported substitute is a **text-editor decoration**: the project name is drawn at the end of a line in the middle of the viewport for about a second. It is the only surface in the API that renders where you are actually looking without taking focus, changing the editor layout, or leaving anything behind.
 
 Opening a tab and closing it — like the Welcome page appearing on every alt-tab — was considered and rejected. `preserveFocus` stops keyboard focus moving but not the editor swap: VS Code opens the panel with `activation: RESTORE`, so the webview still becomes the visible tab. Every window switch would hide your file and restore it, create and destroy a webview, and churn the tab bar and `Ctrl+Tab` history.
 
 ## Settings
 
-| Setting                                            | Default     | Description                                                                                                                          |
-| -------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `ntWindowTitle.label`                              | `""`        | Name to show instead of the folder name. Set it per project in workspace settings when the folder name is not the name you think in. |
-| `ntWindowTitle.statusBar.enabled`                  | `true`      | Show the badge.                                                                                                                      |
-| `ntWindowTitle.statusBar.alignment`                | `"left"`    | Which end of the status bar the badge sits on.                                                                                       |
-| `ntWindowTitle.statusBar.color`                    | `"#22D3EE"` | Hex color, or a theme color id such as `terminal.ansiCyan` to follow the active theme.                                               |
-| `ntWindowTitle.statusBar.icon`                     | `"window"`  | Codicon shown before the name. Empty for none.                                                                                       |
-| `ntWindowTitle.statusBar.flashOnFocus`             | `true`      | Briefly make the badge prominent when the window gains focus.                                                                        |
-| `ntWindowTitle.statusBar.flashMilliseconds`        | `1200`      | How long the flash lasts. Clamped to 200–10000.                                                                                      |
-| `ntWindowTitle.editorAnnouncement.enabled`         | `true`      | Announce the project name in the editor on focus.                                                                                    |
-| `ntWindowTitle.editorAnnouncement.milliseconds`    | `1200`      | How long it stays. Clamped to 200–10000.                                                                                             |
-| `ntWindowTitle.editorAnnouncement.color`           | `""`        | Hex color or theme color id. Empty reuses `statusBar.color`.                                                                         |
-| `ntWindowTitle.editorAnnouncement.uppercase`       | `true`      | Announce in capitals.                                                                                                                |
-| `ntWindowTitle.editorAnnouncement.fontSizePercent` | `220`       | Size as a percentage of the editor font. Clamped to 100–500; 100 disables scaling. See the note below.                               |
+| Setting                                            | Default     | Description                                                                                                                                                                          |
+| -------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ntWindowTitle.label`                              | `""`        | Name to show instead of the folder name. Set it per project in workspace settings when the folder name is not the name you think in.                                                 |
+| `ntWindowTitle.statusBar.enabled`                  | `true`      | Show the badge.                                                                                                                                                                      |
+| `ntWindowTitle.statusBar.alignment`                | `"left"`    | Which end of the status bar the badge sits on.                                                                                                                                       |
+| `ntWindowTitle.statusBar.color`                    | `"#22D3EE"` | Hex color, or a theme color id such as `terminal.ansiCyan` to follow the active theme.                                                                                               |
+| `ntWindowTitle.statusBar.icon`                     | `"window"`  | Codicon shown before the name. Empty for none.                                                                                                                                       |
+| `ntWindowTitle.statusBar.flashOnFocus`             | `true`      | Briefly make the badge prominent when the window gains focus.                                                                                                                        |
+| `ntWindowTitle.statusBar.flashMilliseconds`        | `1200`      | How long the flash lasts. Clamped to 200–10000.                                                                                                                                      |
+| `ntWindowTitle.editorAnnouncement.enabled`         | `true`      | Announce the project name in the editor on focus.                                                                                                                                    |
+| `ntWindowTitle.editorAnnouncement.milliseconds`    | `1200`      | How long it stays. Clamped to 200–10000.                                                                                                                                             |
+| `ntWindowTitle.editorAnnouncement.color`           | `""`        | Hex color or theme color id. Empty reuses `statusBar.color`.                                                                                                                         |
+| `ntWindowTitle.editorAnnouncement.uppercase`       | `true`      | Announce in capitals.                                                                                                                                                                |
+| `ntWindowTitle.editorAnnouncement.fontSizePercent` | `220`       | Size as a percentage of the editor font. Clamped to 100–500; 100 disables scaling. See the note below.                                                                               |
+| `ntWindowTitle.editorAnnouncement.position`        | `center`    | `center` for the middle of the visible lines, `top` for just below the first. A scaled announcement overflows its line upward, so at the very top the breadcrumb bar paints over it. |
 
 The name shown is the explicit `label` if set, otherwise the open folder's name, otherwise the workspace name for a multi-root workspace. An empty window shows nothing.
 

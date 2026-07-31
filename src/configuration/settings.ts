@@ -10,6 +10,9 @@ const DEFAULT_ANNOUNCEMENT_FONT_SIZE_PERCENT = 220;
 
 export type StatusBarSide = 'left' | 'right';
 
+/** Which line of the viewport the announcement attaches to. */
+export type AnnouncementPosition = 'center' | 'top';
+
 export interface StatusBarSettings {
 	enabled: boolean;
 	alignment: StatusBarSide;
@@ -30,6 +33,7 @@ export interface EditorAnnouncementSettings {
 	uppercase: boolean;
 	/** 100 means the editor's own size; above that scales the announcement. */
 	fontSizePercent: number;
+	position: AnnouncementPosition;
 }
 
 export interface Settings {
@@ -156,6 +160,8 @@ export function readSettings(): Settings {
 				500,
 				DEFAULT_ANNOUNCEMENT_FONT_SIZE_PERCENT
 			),
+			position:
+				readString(config, 'editorAnnouncement.position', 'center') === 'top' ? 'top' : 'center',
 		},
 		statusBar: {
 			enabled: readBoolean(config, 'statusBar.enabled', true),

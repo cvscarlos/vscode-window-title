@@ -9,6 +9,7 @@ const SETTINGS: EditorAnnouncementSettings = {
 	milliseconds: 1200,
 	color: '#22D3EE',
 	uppercase: true,
+	fontSizePercent: 220,
 };
 
 suite('announcementDecoration', () => {
@@ -16,13 +17,35 @@ suite('announcementDecoration', () => {
 		const after = announcementDecoration('payments-api', SETTINGS).after;
 		assert.ok(after);
 		assert.match(String(after.contentText), /PAYMENTS-API/);
-		assert.equal(after.color, '#22D3EE');
-		assert.equal(after.borderColor, '#22D3EE', 'the border must track the text color');
+		assert.equal(after.backgroundColor, '#22D3EE');
+		assert.equal(after.borderColor, '#22D3EE', 'the border must track the fill');
 	});
 
 	test('a theme color id becomes a ThemeColor rather than a raw string', () => {
 		const after = announcementDecoration('api', { ...SETTINGS, color: 'terminal.ansiCyan' }).after;
 		assert.ok(after?.color instanceof vscode.ThemeColor);
+	});
+
+	// Attachment options have no fontSize; above 100% the size is appended to
+	// textDecoration, which VS Code passes through as raw CSS. Undocumented, opt-in,
+	// and it fails soft: an escaped value just drops the declaration.
+	test('scales the text only above 100 percent', () => {
+		const scaled = announcementDecoration('api', { ...SETTINGS, fontSizePercent: 220 }).after;
+		assert.match(String(scaled?.textDecoration), /font-size: 220%/);
+
+		const unscaled = announcementDecoration('api', { ...SETTINGS, fontSizePercent: 100 }).after;
+		assert.equal(unscaled?.textDecoration, undefined, '100% must inject nothing at all');
+	});
+
+	// A hex fill can derive a readable foreground; a theme color id cannot, so
+	// that case stays outlined rather than risking light text on a light fill.
+	test('fills for a hex color and stays outlined for a theme color id', () => {
+		const hex = announcementDecoration('api', SETTINGS).after;
+		assert.equal(hex?.backgroundColor, '#22D3EE');
+		assert.equal(hex?.color, '#15151E', 'dark text derived for a light cyan fill');
+
+		const themed = announcementDecoration('api', { ...SETTINGS, color: 'terminal.ansiCyan' }).after;
+		assert.equal(themed?.backgroundColor, 'transparent');
 	});
 
 	test('uppercase is optional', () => {

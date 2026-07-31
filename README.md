@@ -8,6 +8,14 @@ That is the whole extension. It holds one status-bar item, one decoration type, 
 
 Run **Window Title nt: Announce Project Name** to see it without switching windows; it is worth binding to a key if you like it.
 
+**Window Title nt: Color Title Bar For This Project** turns VS Code's Command Center into a colored pill around the project name. An extension cannot draw in the title bar, so this writes the same `window.commandCenter` and `workbench.colorCustomizations` settings you would write by hand — into the _workspace_, which usually means a `.vscode/settings.json` your team may see. It asks first, merges rather than overwriting your existing customizations, and **Clear Title Bar Color** removes only its own keys.
+
+### One unsupported thing, on purpose
+
+Decoration attachments expose no `fontSize`. Any `fontSizePercent` above 100 is applied by appending a declaration to `textDecoration`, which VS Code passes through as raw CSS. That is **undocumented behaviour**, and it is the only thing in this extension that relies on something Microsoft has not promised.
+
+It is opt-out (`fontSizePercent: 100`) and it fails soft: if a future VS Code escapes those values, the declaration is simply dropped and the announcement renders at the normal editor size. Nothing breaks, nothing is left behind, and your installation is never modified.
+
 Two honest caveats. The announcement needs a **visible text editor** — nothing appears on the Welcome tab or the Settings UI, where the status-bar badge still carries the name. And the status-bar flash uses `statusBarItem.warningBackground`, one of only two background colors VS Code allows on a status-bar item; in themes that rebind `editorWarning.foreground` close to your badge color (Dracula Soft, for one) the flash is nearly invisible. The editor announcement is the one whose color is entirely ours, so it looks the same in every theme.
 
 ## Why it does not draw over the window
@@ -26,19 +34,20 @@ Opening a tab and closing it — like the Welcome page appearing on every alt-ta
 
 ## Settings
 
-| Setting                                         | Default     | Description                                                                                                                          |
-| ----------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `ntWindowTitle.label`                           | `""`        | Name to show instead of the folder name. Set it per project in workspace settings when the folder name is not the name you think in. |
-| `ntWindowTitle.statusBar.enabled`               | `true`      | Show the badge.                                                                                                                      |
-| `ntWindowTitle.statusBar.alignment`             | `"left"`    | Which end of the status bar the badge sits on.                                                                                       |
-| `ntWindowTitle.statusBar.color`                 | `"#22D3EE"` | Hex color, or a theme color id such as `terminal.ansiCyan` to follow the active theme.                                               |
-| `ntWindowTitle.statusBar.icon`                  | `"window"`  | Codicon shown before the name. Empty for none.                                                                                       |
-| `ntWindowTitle.statusBar.flashOnFocus`          | `true`      | Briefly make the badge prominent when the window gains focus.                                                                        |
-| `ntWindowTitle.statusBar.flashMilliseconds`     | `1200`      | How long the flash lasts. Clamped to 200–10000.                                                                                      |
-| `ntWindowTitle.editorAnnouncement.enabled`      | `true`      | Announce the project name in the editor on focus.                                                                                    |
-| `ntWindowTitle.editorAnnouncement.milliseconds` | `1200`      | How long it stays. Clamped to 200–10000.                                                                                             |
-| `ntWindowTitle.editorAnnouncement.color`        | `""`        | Hex color or theme color id. Empty reuses `statusBar.color`.                                                                         |
-| `ntWindowTitle.editorAnnouncement.uppercase`    | `true`      | Announce in capitals.                                                                                                                |
+| Setting                                            | Default     | Description                                                                                                                          |
+| -------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `ntWindowTitle.label`                              | `""`        | Name to show instead of the folder name. Set it per project in workspace settings when the folder name is not the name you think in. |
+| `ntWindowTitle.statusBar.enabled`                  | `true`      | Show the badge.                                                                                                                      |
+| `ntWindowTitle.statusBar.alignment`                | `"left"`    | Which end of the status bar the badge sits on.                                                                                       |
+| `ntWindowTitle.statusBar.color`                    | `"#22D3EE"` | Hex color, or a theme color id such as `terminal.ansiCyan` to follow the active theme.                                               |
+| `ntWindowTitle.statusBar.icon`                     | `"window"`  | Codicon shown before the name. Empty for none.                                                                                       |
+| `ntWindowTitle.statusBar.flashOnFocus`             | `true`      | Briefly make the badge prominent when the window gains focus.                                                                        |
+| `ntWindowTitle.statusBar.flashMilliseconds`        | `1200`      | How long the flash lasts. Clamped to 200–10000.                                                                                      |
+| `ntWindowTitle.editorAnnouncement.enabled`         | `true`      | Announce the project name in the editor on focus.                                                                                    |
+| `ntWindowTitle.editorAnnouncement.milliseconds`    | `1200`      | How long it stays. Clamped to 200–10000.                                                                                             |
+| `ntWindowTitle.editorAnnouncement.color`           | `""`        | Hex color or theme color id. Empty reuses `statusBar.color`.                                                                         |
+| `ntWindowTitle.editorAnnouncement.uppercase`       | `true`      | Announce in capitals.                                                                                                                |
+| `ntWindowTitle.editorAnnouncement.fontSizePercent` | `220`       | Size as a percentage of the editor font. Clamped to 100–500; 100 disables scaling. See the note below.                               |
 
 The name shown is the explicit `label` if set, otherwise the open folder's name, otherwise the workspace name for a multi-root workspace. An empty window shows nothing.
 

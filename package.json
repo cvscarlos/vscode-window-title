@@ -3,7 +3,7 @@
 	"displayName": "Window Title nt",
 	"icon": "images/icon.png",
 	"description": "Shows the project name in the status bar and announces it in the editor when the window gains focus, so you can tell your VS Code windows apart",
-	"version": "2.2.0",
+	"version": "2.3.0",
 	"publisher": "nokotata",
 	"license": "MIT",
 	"repository": {
@@ -88,6 +88,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Render the announced name in capitals."
+				},
+				"ntWindowTitle.editorAnnouncement.fontSizePercent": {
+					"type": "number",
+					"default": 220,
+					"markdownDescription": "Size of the announcement, as a percentage of the editor font size. Clamped to 100-500; 100 means no scaling.\n\n**Note:** decoration attachments have no official `fontSize`, so any value above 100 is applied by appending a declaration to `textDecoration`, which VS Code passes through as raw CSS. This is undocumented behaviour. If a future VS Code escapes those values the announcement simply renders at the normal size — nothing breaks."
 				}
 			}
 		},
@@ -95,6 +100,14 @@
 			{
 				"command": "ntWindowTitle.announceProjectName",
 				"title": "Window Title nt: Announce Project Name"
+			},
+			{
+				"command": "ntWindowTitle.colorTitleBar",
+				"title": "Window Title nt: Color Title Bar For This Project"
+			},
+			{
+				"command": "ntWindowTitle.clearTitleBarColor",
+				"title": "Window Title nt: Clear Title Bar Color"
 			}
 		]
 	},

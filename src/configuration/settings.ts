@@ -6,6 +6,7 @@ const DEFAULT_STATUS_BAR_COLOR = '#22D3EE';
 const DEFAULT_ICON = 'window';
 const DEFAULT_FLASH_MILLISECONDS = 1200;
 const DEFAULT_ANNOUNCEMENT_MILLISECONDS = 1200;
+const DEFAULT_ANNOUNCEMENT_FONT_SIZE_PERCENT = 220;
 
 export type StatusBarSide = 'left' | 'right';
 
@@ -27,6 +28,8 @@ export interface EditorAnnouncementSettings {
 	/** Hex color or theme color id — already validated. */
 	color: string;
 	uppercase: boolean;
+	/** 100 means the editor's own size; above that scales the announcement. */
+	fontSizePercent: number;
 }
 
 export interface Settings {
@@ -61,6 +64,31 @@ export function clampNumber(raw: number, min: number, max: number, fallback: num
 		return fallback;
 	}
 	return Math.min(max, Math.max(min, Math.round(raw)));
+}
+
+/**
+ * Near-black or white, whichever stays readable on the given hex background.
+ * Derived rather than configured, so a light fill can never end up with light
+ * text. Uses the WCAG relative-luminance threshold.
+ */
+export function readableTextOn(hexColor: string): string {
+	const hex = hexColor.replace('#', '');
+	const full =
+		hex.length === 3 || hex.length === 4
+			? hex
+					.slice(0, 3)
+					.split('')
+					.map((c) => c + c)
+					.join('')
+			: hex.slice(0, 6);
+
+	const channel = (offset: number): number => {
+		const value = Number.parseInt(full.slice(offset, offset + 2), 16) / 255;
+		return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+	};
+
+	const luminance = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
+	return luminance > 0.179 ? '#15151E' : '#FFFFFF';
 }
 
 export function sanitizeCodicon(raw: string): string {
@@ -118,6 +146,16 @@ export function readSettings(): Settings {
 					? statusBarColor
 					: sanitizeColor(announcementColor, statusBarColor),
 			uppercase: readBoolean(config, 'editorAnnouncement.uppercase', true),
+			fontSizePercent: clampNumber(
+				readNumber(
+					config,
+					'editorAnnouncement.fontSizePercent',
+					DEFAULT_ANNOUNCEMENT_FONT_SIZE_PERCENT
+				),
+				100,
+				500,
+				DEFAULT_ANNOUNCEMENT_FONT_SIZE_PERCENT
+			),
 		},
 		statusBar: {
 			enabled: readBoolean(config, 'statusBar.enabled', true),

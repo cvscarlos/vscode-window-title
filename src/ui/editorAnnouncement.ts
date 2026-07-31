@@ -1,5 +1,9 @@
 import * as vscode from 'vscode';
-import { isHexColor, type EditorAnnouncementSettings } from '../configuration/settings';
+import {
+	isHexColor,
+	readableTextOn,
+	type EditorAnnouncementSettings,
+} from '../configuration/settings';
 
 /**
  * How long the announcement refuses to repeat after showing. Focus events arrive
@@ -112,17 +116,49 @@ export function announcementDecoration(
 	name: string,
 	settings: EditorAnnouncementSettings
 ): vscode.DecorationInstanceRenderOptions {
-	const color = isHexColor(settings.color) ? settings.color : new vscode.ThemeColor(settings.color);
+	const filled = isHexColor(settings.color);
+
+	// A hex color can be filled, because a readable text color is derivable from
+	// it. A theme color id cannot — its value is not known here — so that case
+	// stays outlined rather than risking light-on-light.
+	const color = filled ? readableTextOn(settings.color) : new vscode.ThemeColor(settings.color);
+	const background = filled ? settings.color : 'transparent';
+	const borderColor = filled ? settings.color : new vscode.ThemeColor(settings.color);
 
 	return {
 		after: {
 			contentText: `  ${settings.uppercase ? name.toUpperCase() : name}  `,
 			color,
-			fontWeight: '600',
+			backgroundColor: background,
+			fontWeight: '700',
 			// Pushed clear of the code so it never looks like part of the line.
 			margin: '0 0 0 2em',
 			border: '1px solid',
-			borderColor: color,
+			borderColor,
+			...scaledFont(settings.fontSizePercent),
 		},
 	};
+}
+
+/**
+ * Scales the announcement past the editor's font size.
+ *
+ * **This is an undocumented use of `textDecoration`.** The attachment options
+ * expose no `fontSize`, but VS Code copies every one of them into a CSS rule
+ * verbatim, so a declaration can be appended to this one. It is a deliberate,
+ * user-facing choice — `editorAnnouncement.fontSizePercent` — not something done
+ * behind the user's back, and the README says so.
+ *
+ * It fails soft. If VS Code ever escapes these values, `text-decoration` simply
+ * becomes an invalid declaration, the browser drops it, and the announcement
+ * renders at the normal size instead of breaking.
+ *
+ * `fontSizePercent` is clamped to 100–500 in settings.ts, so nothing arbitrary
+ * reaches the stylesheet; at 100 nothing is injected at all.
+ */
+function scaledFont(fontSizePercent: number): { textDecoration?: string } {
+	if (fontSizePercent <= 100) {
+		return {};
+	}
+	return { textDecoration: `none; font-size: ${fontSizePercent}%; vertical-align: middle` };
 }

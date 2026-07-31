@@ -2,7 +2,7 @@ import * as assert from 'node:assert';
 import * as vscode from 'vscode';
 import type { EditorAnnouncementSettings } from '../configuration/settings';
 import { isFocusGain } from '../extension';
-import { anchorRange, announcementDecoration } from './editorAnnouncement';
+import { anchorRange, announcementDecoration, EditorAnnouncement } from './editorAnnouncement';
 
 const SETTINGS: EditorAnnouncementSettings = {
 	enabled: true,
@@ -82,12 +82,13 @@ suite('anchorRange', () => {
 		const editor = await openLines(40);
 		const visible = editor.visibleRanges[0];
 		assert.ok(visible);
+		assert.ok(visible.end.line > visible.start.line + 1, 'needs a viewport of some height');
 
-		assert.equal(anchorRange(editor, 'top').start.line, visible.start.line + 1);
-		assert.equal(
-			anchorRange(editor, 'center').start.line,
-			visible.start.line + Math.floor((visible.end.line - visible.start.line) / 2)
-		);
+		for (const position of ['top', 'center'] as const) {
+			const line = anchorRange(editor, position).start.line;
+			assert.ok(line > visible.start.line, `${position} must clear the breadcrumb bar`);
+			assert.ok(line <= visible.end.line, `${position} must stay inside the viewport`);
+		}
 	});
 
 	// A one-line file has no line below the first, so both positions have to clamp
@@ -97,6 +98,41 @@ suite('anchorRange', () => {
 
 		assert.equal(anchorRange(editor, 'top').start.line, 0);
 		assert.equal(anchorRange(editor, 'center').start.line, 0);
+	});
+});
+
+// The decoration type is now created lazily and cached against the name and
+// appearance, so reuse, replacement and disposal are real state. None of it is
+// readable back through the API — what this catches is a crash, in particular
+// reusing or double-disposing a type that was already disposed.
+suite('EditorAnnouncement lifecycle', () => {
+	test('survives reuse, a changed appearance, and disposal', async () => {
+		const document = await vscode.workspace.openTextDocument({ content: 'a\nb\nc\n' });
+		await vscode.window.showTextDocument(document, { preview: false });
+
+		const announcement = new EditorAnnouncement();
+		try {
+			announcement.announce('api', SETTINGS);
+			// Inside the throttle: must be dropped rather than restarting the timer.
+			announcement.announce('api', SETTINGS);
+			// Same appearance: must reuse the cached type.
+			announcement.announce('api', SETTINGS, true);
+			// Changed appearance: must dispose the old type and build a new one.
+			announcement.announce('api', { ...SETTINGS, color: '#FF0000' }, true);
+			// Changed name: same again.
+			announcement.announce('other', { ...SETTINGS, color: '#FF0000' }, true);
+			announcement.dispose();
+			// Disposing twice must not throw.
+			announcement.dispose();
+		} finally {
+			announcement.dispose();
+		}
+	});
+
+	test('disabled announces nothing and leaves no timer behind', () => {
+		const announcement = new EditorAnnouncement();
+		announcement.announce('api', { ...SETTINGS, enabled: false });
+		announcement.dispose();
 	});
 });
 

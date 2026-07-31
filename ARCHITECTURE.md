@@ -1,12 +1,13 @@
 # Architecture
 
-The extension is three source files. This document exists mainly to record one decision, so it is not made again by accident.
+The extension is five source files. This document exists mainly to record one decision, so it is not made again by accident.
 
 ## Cost before features
 
 The value delivered is small — it tells you which project a window belongs to. Nobody keeps an extension that makes their editor feel slower in exchange for that, so the budget comes first:
 
-- **One status-bar item, one decoration type, three event subscriptions, zero I/O.** The badge is recomputed only when `onDidChangeConfiguration` (filtered to our section), `onDidChangeWorkspaceFolders`, or `onDidChangeWindowState` fires. The decoration type is created once at activation, because each `createTextEditorDecorationType` call injects a CSS rule.
+- **One status-bar item, one decoration type, three event subscriptions, zero I/O.** The badge is recomputed when `onDidChangeConfiguration` (filtered to our section), `onDidChangeWorkspaceFolders`, or `onDidChangeWindowState` fires — so twice per focus gain, since the flash renders and then un-renders.
+- **The decoration type carries the appearance, and a focus event does no stylesheet work.** The obvious shape — one bare type plus per-range `DecorationInstanceRenderOptions` — is the expensive one. `CodeEditorWidget.setDecorationsByType` hashes the instance options, registers a decoration _sub-type_ for that hash (`registerDecorationType` → `DecorationCSSRules` → `insertRule`, plus a theme listener), and the trailing sweep in the same method removes any sub-type absent from the new call — so clearing the announcement drops the rule again. That is an insert and a remove per focus. Building the appearance into the type instead, and caching it against the name and the appearance settings, registers the rule once. Passing a plain `Range[]` rather than `DecorationOptions[]` also takes `$trySetDecorationsFast`, which sends four packed numbers per range instead of a serialized object graph.
 - **No timer at rest.** One exists only while a focus flash is on screen — roughly a second — and it is cleared both on the next flash and on disposal. A burst of focus events cannot strobe the badge: re-flashing is refused within 400 ms, which is a correctness guard rather than a setting.
 - **No runtime dependencies.** `package.json` has `devDependencies` only.
 - **Nothing polls** — not the filesystem, not the workspace, not the window state.

@@ -4,7 +4,7 @@
 
 When you keep a window open per repository, the folder name buried in the title bar is easy to miss. This extension puts the project name in the status bar, in cyan, where it is always visible — and **announces it inside the editor when the window gains focus**, so you notice which project you just switched to without looking away from your code.
 
-That is the whole extension. It holds one status-bar item, one decoration type, three event subscriptions, and **no timer except while an announcement is on screen** — about a second. It performs **no filesystem or network I/O** and has **no runtime dependencies**. The badge is recomputed only when the workspace folders or its own settings change.
+That is the whole extension. It holds one status-bar item, one decoration type, three event subscriptions, and **no timer except while an announcement is on screen** — about a second. It performs **no filesystem or network I/O** and has **no runtime dependencies**, and it ships as a single bundled file. Focusing a window redraws the badge and sets one decoration range; the stylesheet is not touched, because the decoration type carries the appearance and is rebuilt only when the project name or your settings change.
 
 Run **Window Title nt: Announce Project Name** to see it without switching windows; it is worth binding to a key if you like it.
 
@@ -48,7 +48,7 @@ Opening a tab and closing it — like the Welcome page appearing on every alt-ta
 | `ntWindowTitle.editorAnnouncement.fontSizePercent` | `220`       | Size as a percentage of the editor font. Clamped to 100–500; 100 disables scaling. See the note below.                                                                               |
 | `ntWindowTitle.editorAnnouncement.position`        | `center`    | `center` for the middle of the visible lines, `top` for just below the first. A scaled announcement overflows its line upward, so at the very top the breadcrumb bar paints over it. |
 
-The name shown is the explicit `label` if set, otherwise the open folder's name, otherwise the workspace name for a multi-root workspace. An empty window shows nothing.
+The name shown is the explicit `label` if set; otherwise, in a multi-root workspace, the workspace's own name, falling back to the first root when it has none; otherwise the open folder's name. An empty window shows nothing.
 
 ## Development
 

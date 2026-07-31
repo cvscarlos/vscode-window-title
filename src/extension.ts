@@ -31,13 +31,23 @@ export function activate(context: vscode.ExtensionContext): void {
 		statusBar.update(currentName(settings), settings.statusBar);
 	};
 
-	const announce = (): void => {
+	// `force` marks the command path: it skips the burst throttle, because there the
+	// user asked for this one deliberately rather than by switching windows.
+	const announce = (force: boolean): void => {
 		const settings = readSettings();
 		const name = currentName(settings);
-		if (name !== undefined) {
-			announcement.announce(name, settings.editorAnnouncement);
+		if (name === undefined) {
+			// Silent on a focus change — an empty window has nothing to announce and
+			// says so through the missing badge. Invoked by hand it must answer.
+			if (force) {
+				void vscode.window.showInformationMessage(
+					'Window Title nt: this window has no project. Open a folder to see its name.'
+				);
+			}
+			return;
 		}
-		statusBar.flash();
+		announcement.announce(name, settings.editorAnnouncement, force);
+		statusBar.flash(force);
 	};
 
 	// The window is focused at activation, so the first transition to watch for is
@@ -58,10 +68,10 @@ export function activate(context: vscode.ExtensionContext): void {
 			const gained = isFocusGain(focused, state.focused);
 			focused = state.focused;
 			if (gained) {
-				announce();
+				announce(false);
 			}
 		}),
-		vscode.commands.registerCommand('ntWindowTitle.announceProjectName', announce)
+		vscode.commands.registerCommand('ntWindowTitle.announceProjectName', () => announce(true))
 	);
 
 	refresh();

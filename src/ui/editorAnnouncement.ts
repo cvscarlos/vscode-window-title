@@ -8,7 +8,8 @@ import {
 
 /**
  * How long the announcement refuses to repeat after showing. Focus events arrive
- * in bursts; without this the decoration would restart on each one.
+ * in bursts; without this the decoration would restart on each one. The command
+ * bypasses it — there the user asked, explicitly and on purpose.
  */
 const MIN_INTERVAL_MS = 400;
 
@@ -25,12 +26,16 @@ const MIN_INTERVAL_MS = 400;
  */
 export class EditorAnnouncement {
 	/**
-	 * Created once. Each `createTextEditorDecorationType` call injects a CSS rule,
-	 * so making one per announcement would churn the stylesheet.
+	 * Holds the appearance, so announcing costs no stylesheet work.
+	 *
+	 * The alternative — one bare type plus per-range `DecorationInstanceRenderOptions`
+	 * — looks cheaper but is not: `setDecorationsByType` hashes the instance options,
+	 * registers a decoration *sub-type* for that hash, and the same call with an
+	 * empty array tears it down again. That is a CSS rule inserted and removed on
+	 * every focus. Carrying the appearance on the type instead registers it once.
 	 */
-	private readonly decoration = vscode.window.createTextEditorDecorationType({
-		rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
-	});
+	private decoration: vscode.TextEditorDecorationType | undefined;
+	private decorationKey = '';
 
 	private timer: NodeJS.Timeout | undefined;
 	private lastShownAt = 0;
@@ -42,36 +47,73 @@ export class EditorAnnouncement {
 	 * an editor that scrolled out of view would never be removed.
 	 */
 	private clear(): void {
-		for (const editor of this.decorated) {
-			editor.setDecorations(this.decoration, []);
+		const decoration = this.decoration;
+		if (decoration !== undefined) {
+			for (const editor of this.decorated) {
+				editor.setDecorations(decoration, []);
+			}
 		}
 		this.decorated = [];
 	}
 
+	/** Reuses the live type whenever the name and the appearance are unchanged. */
+	private typeFor(
+		name: string,
+		settings: EditorAnnouncementSettings
+	): vscode.TextEditorDecorationType {
+		const key = JSON.stringify([
+			name,
+			settings.color,
+			settings.uppercase,
+			settings.fontSizePercent,
+		]);
+		if (this.decoration !== undefined && this.decorationKey === key) {
+			return this.decoration;
+		}
+
+		// Disposing a type also removes its decorations from every editor, so the
+		// tracked set is stale from here on.
+		this.decoration?.dispose();
+		this.decorated = [];
+
+		this.decoration = vscode.window.createTextEditorDecorationType({
+			rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+			...announcementDecoration(name, settings),
+		});
+		this.decorationKey = key;
+		return this.decoration;
+	}
+
 	/** Shows the name briefly in every visible editor. */
-	announce(name: string, settings: EditorAnnouncementSettings): void {
+	announce(name: string, settings: EditorAnnouncementSettings, force = false): void {
 		if (!settings.enabled) {
 			return;
 		}
 
-		const now = Date.now();
-		if (now - this.lastShownAt < MIN_INTERVAL_MS) {
-			return;
-		}
-		this.lastShownAt = now;
-
 		// Nothing to decorate on a Welcome tab, the Settings UI, or an empty
-		// workbench. The status-bar badge still carries the name there.
+		// workbench. The status-bar badge still carries the name there. Checked
+		// before the throttle, so a no-op does not block the next real announcement.
 		const editors = [...vscode.window.visibleTextEditors];
 		if (editors.length === 0) {
 			return;
 		}
 
-		const options = announcementDecoration(name, settings);
+		const now = Date.now();
+		if (!force && now - this.lastShownAt < MIN_INTERVAL_MS) {
+			return;
+		}
+		this.lastShownAt = now;
+
+		const decoration = this.typeFor(name, settings);
+
+		// The previous set can contain an editor missing from this one; nothing else
+		// would ever take its decoration off.
+		this.clear();
+
 		for (const editor of editors) {
-			editor.setDecorations(this.decoration, [
-				{ range: anchorRange(editor, settings.position), renderOptions: options },
-			]);
+			// A plain Range[] takes `$trySetDecorationsFast`, which sends four packed
+			// numbers per range instead of a serialized object graph.
+			editor.setDecorations(decoration, [anchorRange(editor, settings.position)]);
 		}
 		this.decorated = editors;
 
@@ -89,8 +131,10 @@ export class EditorAnnouncement {
 			clearTimeout(this.timer);
 			this.timer = undefined;
 		}
-		this.clear();
-		this.decoration.dispose();
+		this.decoration?.dispose();
+		this.decoration = undefined;
+		this.decorationKey = '';
+		this.decorated = [];
 	}
 }
 
@@ -138,7 +182,7 @@ export function anchorRange(
 export function announcementDecoration(
 	name: string,
 	settings: EditorAnnouncementSettings
-): vscode.DecorationInstanceRenderOptions {
+): vscode.DecorationRenderOptions {
 	const filled = isHexColor(settings.color);
 
 	// A hex color can be filled, because a readable text color is derivable from

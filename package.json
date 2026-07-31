@@ -3,15 +3,24 @@
 	"displayName": "Window Title nt",
 	"icon": "images/icon.png",
 	"description": "Shows the project name in the status bar and announces it in the editor when the window gains focus, so you can tell your VS Code windows apart",
-	"version": "2.5.0",
+	"version": "2.6.0",
 	"publisher": "nokotata",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/cvscarlos/vscode-window-title.git"
 	},
+	"bugs": {
+		"url": "https://github.com/cvscarlos/vscode-window-title/issues"
+	},
+	"homepage": "https://github.com/cvscarlos/vscode-window-title#readme",
+	"galleryBanner": {
+		"color": "#15151E",
+		"theme": "dark"
+	},
+	"qna": "marketplace",
 	"engines": {
-		"vscode": "^1.105.0"
+		"vscode": "^1.75.0"
 	},
 	"categories": [
 		"Other"
@@ -22,10 +31,19 @@
 		"status bar",
 		"multiple windows"
 	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": true
+		}
+	},
+	"extensionKind": [
+		"ui",
+		"workspace"
+	],
 	"activationEvents": [
 		"onStartupFinished"
 	],
-	"main": "./out/extension.js",
+	"main": "./dist/extension.js",
 	"contributes": {
 		"configuration": {
 			"title": "Window Title nt",
@@ -112,32 +130,36 @@
 		"commands": [
 			{
 				"command": "ntWindowTitle.announceProjectName",
-				"title": "Window Title nt: Announce Project Name"
+				"title": "Announce Project Name",
+				"category": "Window Title nt",
+				"enablement": "workspaceFolderCount > 0"
 			}
 		]
 	},
 	"scripts": {
 		"prepare": "git config core.hooksPath .githooks || true",
-		"clean": "rm -rf out",
+		"clean": "rm -rf out dist",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"lint": "eslint src",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"pretest": "npm run clean && npm run compile && npm run lint && npm run format:check",
+		"pretest": "npm run clean && npm run compile && npm run bundle && npm run lint && npm run format:check",
 		"test": "vscode-test",
-		"vscode:prepublish": "npm run compile",
-		"package": "vsce package --out tmp/"
+		"vscode:prepublish": "npm run clean && npm run compile && npm run bundle",
+		"package": "vsce package --out tmp/",
+		"bundle": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node18 --minify"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
 		"@types/node": "22.x",
-		"@types/vscode": "^1.105.0",
+		"@types/vscode": "1.75.0",
 		"@typescript-eslint/eslint-plugin": "^8.62.0",
 		"@typescript-eslint/parser": "^8.62.0",
 		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.0.0",
 		"@vscode/vsce": "^3.9.2",
+		"esbuild": "0.28.1",
 		"eslint": "^10.5.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-unicorn": "^72.0.0",

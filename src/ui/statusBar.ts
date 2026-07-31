@@ -4,7 +4,8 @@ import { isHexColor, type StatusBarSettings, type StatusBarSide } from '../confi
 /**
  * How long the badge refuses to re-flash after flashing. Focus events arrive in
  * bursts when a window is dragged or an OS overlay closes; without this the badge
- * would strobe. Not configurable — a correctness guard, not taste.
+ * would strobe. Not configurable — a correctness guard, not taste. The command
+ * bypasses it, because there the user asked for the flash directly.
  */
 const MIN_FLASH_INTERVAL_MS = 400;
 
@@ -73,6 +74,9 @@ export class ProjectStatusBar {
 		// which is where the eye lands.
 		const item = vscode.window.createStatusBarItem('projectName', side, 1_000_000);
 		item.name = 'Project Name';
+		// Gives the badge a button role for screen readers, and makes clicking it
+		// re-announce — the only way to see the name again without switching windows.
+		item.command = 'ntWindowTitle.announceProjectName';
 		this.item = item;
 		this.alignment = alignment;
 		return item;
@@ -118,7 +122,7 @@ export class ProjectStatusBar {
 	 * Briefly makes the badge prominent, so a window switch is noticeable without
 	 * anything being drawn over the editor.
 	 */
-	flash(): void {
+	flash(force = false): void {
 		const settings = this.settings;
 		if (settings === undefined || !settings.enabled || !settings.flashOnFocus) {
 			return;
@@ -128,7 +132,7 @@ export class ProjectStatusBar {
 		}
 
 		const now = Date.now();
-		if (now - this.lastFlashAt < MIN_FLASH_INTERVAL_MS) {
+		if (!force && now - this.lastFlashAt < MIN_FLASH_INTERVAL_MS) {
 			return;
 		}
 		this.lastFlashAt = now;

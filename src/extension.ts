@@ -25,8 +25,15 @@ export function activate(context: vscode.ExtensionContext): void {
 				refresh();
 			}
 		}),
-		// The announced name can change without any settings change.
-		vscode.workspace.onDidChangeWorkspaceFolders(refresh)
+		// The name can change without any settings change.
+		vscode.workspace.onDidChangeWorkspaceFolders(refresh),
+		// Only a transition INTO focus announces; losing focus is silent, and the
+		// window that is already focused at startup is not announced either.
+		vscode.window.onDidChangeWindowState((state) => {
+			if (state.focused) {
+				statusBar.flash();
+			}
+		})
 	);
 
 	refresh();

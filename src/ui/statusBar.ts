@@ -2,14 +2,60 @@ import * as vscode from 'vscode';
 import { isHexColor, type StatusBarSettings, type StatusBarSide } from '../configuration/settings';
 
 /**
- * The project badge.
+ * How long the badge refuses to re-flash after flashing. Focus events arrive in
+ * bursts when a window is dragged or an OS overlay closes; without this the badge
+ * would strobe. Not configurable — a correctness guard, not taste.
+ */
+const MIN_FLASH_INTERVAL_MS = 400;
+
+export interface BadgeStyle {
+	text: string;
+	/** Render as a filled pill using the theme's prominent background. */
+	prominent: boolean;
+	/** Undefined while prominent: that background supplies its own foreground. */
+	color: string | undefined;
+}
+
+/**
+ * How the badge should look. Pure, so the decision is testable without a live
+ * `StatusBarItem` — the class below only applies the result.
+ */
+export function badgeStyle(
+	name: string,
+	settings: StatusBarSettings,
+	flashing: boolean
+): BadgeStyle {
+	const icon = settings.icon === '' ? '' : `$(${settings.icon}) `;
+	return {
+		text: `${icon}${name}`,
+		prominent: flashing,
+		// Setting a foreground on top of the prominent background fights it and can
+		// render unreadably, so the flash leaves the color to the theme.
+		color: flashing ? undefined : settings.color,
+	};
+}
+
+/**
+ * The project badge, and the focus announcement.
  *
- * Deliberately timer-free: it changes only when the workspace or the settings
- * change, so at rest it costs nothing.
+ * At rest this holds no timer: one exists only while a flash is on screen, and it
+ * is cleared on the next flash and on disposal.
+ *
+ * The flash uses `statusBarItem.warningBackground` because it is one of only two
+ * background colors VS Code honours on a status-bar item (the other is the error
+ * red). That makes the badge a filled pill for a moment — the standard "look at
+ * me" treatment in the status bar — rather than a color of our choosing.
  */
 export class ProjectStatusBar {
 	private item: vscode.StatusBarItem | undefined;
 	private alignment: StatusBarSide | undefined;
+
+	private name: string | undefined;
+	private settings: StatusBarSettings | undefined;
+
+	private flashing = false;
+	private flashTimer: NodeJS.Timeout | undefined;
+	private lastFlashAt = 0;
 
 	/**
 	 * Alignment is fixed when a status-bar item is created, so a change of side
@@ -38,24 +84,73 @@ export class ProjectStatusBar {
 		this.alignment = undefined;
 	}
 
-	update(name: string | undefined, settings: StatusBarSettings): void {
-		if (name === undefined || !settings.enabled) {
+	/** Single place that decides how the badge looks, flashing or not. */
+	private render(): void {
+		const { name, settings } = this;
+		if (name === undefined || settings === undefined || !settings.enabled) {
 			this.disposeItem();
 			return;
 		}
 
+		const style = badgeStyle(name, settings, this.flashing);
 		const item = this.ensureItem(settings.alignment);
-		const icon = settings.icon === '' ? '' : `$(${settings.icon}) `;
-
-		item.text = `${icon}${name}`;
+		item.text = style.text;
 		item.tooltip = `Project: ${name}`;
-		item.color = isHexColor(settings.color)
-			? settings.color
-			: new vscode.ThemeColor(settings.color);
+		item.backgroundColor = style.prominent
+			? new vscode.ThemeColor('statusBarItem.warningBackground')
+			: undefined;
+		item.color =
+			style.color === undefined
+				? undefined
+				: isHexColor(style.color)
+					? style.color
+					: new vscode.ThemeColor(style.color);
 		item.show();
 	}
 
+	update(name: string | undefined, settings: StatusBarSettings): void {
+		this.name = name;
+		this.settings = settings;
+		this.render();
+	}
+
+	/**
+	 * Briefly makes the badge prominent, so a window switch is noticeable without
+	 * anything being drawn over the editor.
+	 */
+	flash(): void {
+		const settings = this.settings;
+		if (settings === undefined || !settings.enabled || !settings.flashOnFocus) {
+			return;
+		}
+		if (this.name === undefined) {
+			return;
+		}
+
+		const now = Date.now();
+		if (now - this.lastFlashAt < MIN_FLASH_INTERVAL_MS) {
+			return;
+		}
+		this.lastFlashAt = now;
+
+		this.flashing = true;
+		this.render();
+
+		if (this.flashTimer !== undefined) {
+			clearTimeout(this.flashTimer);
+		}
+		this.flashTimer = setTimeout(() => {
+			this.flashTimer = undefined;
+			this.flashing = false;
+			this.render();
+		}, settings.flashMilliseconds);
+	}
+
 	dispose(): void {
+		if (this.flashTimer !== undefined) {
+			clearTimeout(this.flashTimer);
+			this.flashTimer = undefined;
+		}
 		this.disposeItem();
 	}
 }

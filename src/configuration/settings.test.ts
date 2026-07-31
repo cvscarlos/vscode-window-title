@@ -1,5 +1,5 @@
 import * as assert from 'node:assert';
-import { sanitizeCodicon, sanitizeColor } from './settings';
+import { clampNumber, sanitizeCodicon, sanitizeColor } from './settings';
 
 // These reach the VS Code API directly — an unknown theme color id or a codicon
 // name that is not a plain identifier renders as a broken badge, so anything
@@ -26,5 +26,13 @@ suite('settings sanitizers', () => {
 	test('rejects codicon names that are not plain identifiers', () => {
 		assert.equal(sanitizeCodicon('window) $(alert'), '');
 		assert.equal(sanitizeCodicon('../../etc/passwd'), '');
+	});
+	// The flash duration reaches setTimeout, so a hostile or mistyped value must
+	// not park the badge in its prominent state.
+	test('clamps the flash duration and falls back for non-finite input', () => {
+		assert.equal(clampNumber(1200, 200, 10_000, 1200), 1200);
+		assert.equal(clampNumber(5, 200, 10_000, 1200), 200);
+		assert.equal(clampNumber(999_999, 200, 10_000, 1200), 10_000);
+		assert.equal(clampNumber(NaN, 200, 10_000, 1200), 1200);
 	});
 });

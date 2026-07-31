@@ -4,6 +4,7 @@ export const CONFIG_SECTION = 'ntWindowTitle';
 
 const DEFAULT_STATUS_BAR_COLOR = '#22D3EE';
 const DEFAULT_ICON = 'window';
+const DEFAULT_FLASH_MILLISECONDS = 1200;
 
 export type StatusBarSide = 'left' | 'right';
 
@@ -14,6 +15,9 @@ export interface StatusBarSettings {
 	color: string;
 	/** Codicon name, or '' for no icon — already validated. */
 	icon: string;
+	/** Briefly make the badge prominent when the window gains focus. */
+	flashOnFocus: boolean;
+	flashMilliseconds: number;
 }
 
 export interface Settings {
@@ -42,6 +46,13 @@ export function sanitizeColor(raw: string, fallback: string): string {
 	return fallback;
 }
 
+export function clampNumber(raw: number, min: number, max: number, fallback: number): number {
+	if (!Number.isFinite(raw)) {
+		return fallback;
+	}
+	return Math.min(max, Math.max(min, Math.round(raw)));
+}
+
 export function sanitizeCodicon(raw: string): string {
 	const value = raw.trim().replace(/^\$\((.*)\)$/, '$1');
 	return CODICON_NAME.test(value) ? value : '';
@@ -55,6 +66,11 @@ export function sanitizeCodicon(raw: string): string {
 function readString(config: vscode.WorkspaceConfiguration, key: string, fallback: string): string {
 	const value = config.get(key);
 	return typeof value === 'string' ? value : fallback;
+}
+
+function readNumber(config: vscode.WorkspaceConfiguration, key: string, fallback: number): number {
+	const value = config.get(key);
+	return typeof value === 'number' ? value : fallback;
 }
 
 function readBoolean(
@@ -79,6 +95,13 @@ export function readSettings(): Settings {
 				DEFAULT_STATUS_BAR_COLOR
 			),
 			icon: sanitizeCodicon(readString(config, 'statusBar.icon', DEFAULT_ICON)),
+			flashOnFocus: readBoolean(config, 'statusBar.flashOnFocus', true),
+			flashMilliseconds: clampNumber(
+				readNumber(config, 'statusBar.flashMilliseconds', DEFAULT_FLASH_MILLISECONDS),
+				200,
+				10_000,
+				DEFAULT_FLASH_MILLISECONDS
+			),
 		},
 	};
 }

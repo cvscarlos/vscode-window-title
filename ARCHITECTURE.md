@@ -6,18 +6,19 @@ The extension is three source files. This document exists mainly to record one d
 
 The value delivered is small — it tells you which project a window belongs to. Nobody keeps an extension that makes their editor feel slower in exchange for that, so the budget comes first:
 
-- **One status-bar item, two event subscriptions, zero timers, zero I/O.** The badge is recomputed only when `onDidChangeConfiguration` (filtered to our section) or `onDidChangeWorkspaceFolders` fires.
+- **One status-bar item, three event subscriptions, zero I/O.** The badge is recomputed only when `onDidChangeConfiguration` (filtered to our section), `onDidChangeWorkspaceFolders`, or `onDidChangeWindowState` fires.
+- **No timer at rest.** One exists only while a focus flash is on screen — roughly a second — and it is cleared both on the next flash and on disposal. A burst of focus events cannot strobe the badge: re-flashing is refused within 400 ms, which is a correctness guard rather than a setting.
 - **No runtime dependencies.** `package.json` has `devDependencies` only.
 - **Nothing polls** — not the filesystem, not the workspace, not the window state.
 
 ## Files
 
-| File                            | Responsibility                                                     |
-| ------------------------------- | ------------------------------------------------------------------ |
-| `src/extension.ts`              | Activation wiring only.                                            |
-| `src/configuration/settings.ts` | Typed settings reads and all validation.                           |
-| `src/project/projectName.ts`    | Pure name resolution (label / single folder / multi-root / empty). |
-| `src/ui/statusBar.ts`           | The badge.                                                         |
+| File                            | Responsibility                                                                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/extension.ts`              | Activation wiring only.                                                                                                                  |
+| `src/configuration/settings.ts` | Typed settings reads and all validation.                                                                                                 |
+| `src/project/projectName.ts`    | Pure name resolution (label / single folder / multi-root / empty).                                                                       |
+| `src/ui/statusBar.ts`           | The badge, and the focus flash. `badgeStyle()` is a pure function so the appearance decision is testable without a live `StatusBarItem`. |
 
 Settings are read through helpers that check the runtime type. `getConfiguration().get()` returns raw JSON, so the type parameter is a claim rather than a guarantee — a number where a string belongs would otherwise throw out of `activate` and take the whole extension down, badge included. Colors must be a hex value or a theme color id; codicon names must be plain `[a-z0-9-]` identifiers. Unrecognized input falls back to the default.
 
@@ -34,3 +35,5 @@ The only remaining route was to add a stylesheet and a script to VS Code's own `
 Asking users to accept a corrupt-installation warning in exchange for a nicer label is not a reasonable trade, so the feature was removed rather than kept behind a setting. A flag would not have helped: the warning is what makes the trade unacceptable, and a flag only moves the decision to someone with less context.
 
 If this is ever revisited, the constraint to check first is whether VS Code has gained a contributable title-bar menu id or an overlay surface. Until then, the answer is the status bar.
+
+The focus flash is what replaced it. `StatusBarItem.backgroundColor` honours only `statusBarItem.warningBackground` and `statusBarItem.errorBackground`, so "prominent" means the theme's warning colour, not the badge colour — a deliberate limitation of the supported API rather than a choice. The flash therefore drops its own foreground while active, because setting one on top of that background fights the theme and can render unreadably.

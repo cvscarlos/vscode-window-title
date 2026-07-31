@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0
+
+- The badge briefly turns prominent when the window gains focus, so you notice which project you switched to without anything being drawn over the editor. Off via `statusBar.flashOnFocus`; duration via `statusBar.flashMilliseconds`.
+- Only a transition into focus announces. Losing focus is silent, the window already focused at startup is not announced, and re-flashing is refused within 400 ms so a burst of focus events cannot strobe the badge.
+- The flash uses `statusBarItem.warningBackground`, one of only two background colors VS Code honours on a status-bar item, so its colour follows your theme rather than `statusBar.color`.
+
 ## 2.0.0
 
 **Breaking: the centered overlay and the title-bar pill are removed, and the extension no longer modifies your VS Code installation.**

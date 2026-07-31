@@ -2,8 +2,8 @@
 	"name": "nt-window-title",
 	"displayName": "Window Title nt",
 	"icon": "images/icon.png",
-	"description": "Shows the project name in the status bar, so you can tell your VS Code windows apart",
-	"version": "2.0.0",
+	"description": "Shows the project name in the status bar and flashes it when the window gains focus, so you can tell your VS Code windows apart",
+	"version": "2.1.0",
 	"publisher": "nokotata",
 	"license": "MIT",
 	"repository": {
@@ -58,6 +58,16 @@
 					"type": "string",
 					"default": "window",
 					"markdownDescription": "Codicon name shown before the project name — see the [codicon list](https://microsoft.github.io/vscode-codicons/dist/codicon.html). Leave empty for no icon."
+				},
+				"ntWindowTitle.statusBar.flashOnFocus": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Briefly make the badge prominent when the window gains focus, so you notice which project you switched to. Uses `statusBarItem.warningBackground` — one of only two background colors VS Code honours on a status-bar item — so the flash follows your theme rather than a color of our choosing."
+				},
+				"ntWindowTitle.statusBar.flashMilliseconds": {
+					"type": "number",
+					"default": 1200,
+					"description": "How long the flash lasts. Clamped to 200-10000."
 				}
 			}
 		}

@@ -54,3 +54,20 @@ Two API traps found while building this:
 
 - **`onDidChangeWindowState` is not a focus event.** It also fires when `WindowState.active` changes, which is driven by a ten-second user-idle timer. Testing `state.focused` as a level therefore announces during ordinary work in a window that never lost focus. `isFocusGain()` in `src/extension.ts` makes it edge-triggered.
 - **A tab is not an option.** `createWebviewPanel` with `preserveFocus` keeps keyboard focus but VS Code still opens the editor with `activation: RESTORE`, so the panel becomes the visible tab. Announcing that way would hide and restore the user's file on every window switch, plus a webview create/destroy cycle each time.
+
+## Working on it
+
+The README is the marketplace page and is written for people deciding whether to install this. Everything a contributor needs lives here instead.
+
+```bash
+npm install   # also points core.hooksPath at .githooks
+npm test      # clean, compile, bundle, lint, format check, then Mocha
+npm run watch # then F5 in VS Code to launch an Extension Development Host
+npm run package
+```
+
+`pre-commit` type-checks, lints and checks formatting; `pre-push` runs the full suite; CI repeats both and proves the manifest still packages.
+
+The bundle step in `pretest` is not optional — `main` points at `dist/extension.js`, so without it the test host cannot load the extension and every command-registration assertion fails. `vscode:prepublish` cleans first, so compiled output from a deleted source file cannot survive into a VSIX.
+
+Tests run inside a real extension host, so `vscode.Range`, a live `TextEditor` and the command registry are all available to assert against. Prefer that over mocks. Note that an SVG in `README.md` is rejected by `vsce` — the banner there has to be the PNG.

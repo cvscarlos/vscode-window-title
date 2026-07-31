@@ -35,6 +35,8 @@ The only remaining route was to add a stylesheet and a script to VS Code's own `
 
 Asking users to accept a corrupt-installation warning in exchange for a nicer label is not a reasonable trade, so the feature was removed rather than kept behind a setting. A flag would not have helped: the warning is what makes the trade unacceptable, and a flag only moves the decision to someone with less context.
 
+Writing the user's settings for them was tried too, in 2.3.0: a command that set `window.commandCenter` and the `commandCenter.*` colors, turning the Command Center into a colored pill. It worked and broke no rules, but it was withdrawn in 2.4.0 as too much friction for a color — it needed a command, a confirmation, and it wrote into workspace settings that are usually committed, all so the Command Center (which is clickable, and opens a quick pick) could be tinted. Anyone wanting it can set those three keys by hand.
+
 If this is ever revisited, the constraint to check first is whether VS Code has gained a contributable title-bar menu id or an overlay surface. Until then, the answer is the status bar.
 
 The focus flash was the first replacement. `StatusBarItem.backgroundColor` honours only `statusBarItem.warningBackground` and `statusBarItem.errorBackground`, so "prominent" means the theme's warning colour, not the badge colour — a limitation of the supported API rather than a choice. The flash therefore drops its own foreground while active, because setting one on top of that background fights the theme and can render unreadably.
@@ -46,8 +48,6 @@ So the **editor decoration** carries the announcement instead, and its colour _i
 The announcement is a filled pill when its color is a hex value, because a readable foreground can be derived from it, and outlined when it is a theme color id, because the id's value is not knowable here and light-on-light is the failure to avoid.
 
 **The one unsupported thing in this extension.** `ThemableDecorationAttachmentRenderOptions` has no `fontSize` — the twelve properties it does expose are copied verbatim into a CSS rule, with no escaping. `fontSizePercent` above 100 therefore appends `font-size` to `textDecoration`. This was a deliberate, informed choice by the repo owner rather than a shortcut: it is opt-out, the value is clamped to 100–500 before it reaches the stylesheet, and it fails soft — if VS Code ever escapes those values the declaration becomes invalid, the browser drops it, and the announcement renders at the editor's own size. Nothing else here depends on undocumented behaviour.
-
-**The title bar, revisited.** An extension still cannot draw there. What it can do is write the settings a user would write by hand: `window.commandCenter` plus `commandCenter.*` color customizations turn the Command Center into a colored pill around the window title. `src/ui/titleBarColor.ts` does that, and the merge is a pure function precisely because `workbench.colorCustomizations` usually holds unrelated keys and per-theme blocks — replacing that object instead of merging would destroy them, in a file that is often committed. Clearing removes only our six keys.
 
 Two API traps found while building this:
 

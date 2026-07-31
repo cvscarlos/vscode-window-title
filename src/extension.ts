@@ -3,7 +3,6 @@ import { CONFIG_SECTION, readSettings, type Settings } from './configuration/set
 import { resolveProjectName } from './project/projectName';
 import { EditorAnnouncement } from './ui/editorAnnouncement';
 import { ProjectStatusBar } from './ui/statusBar';
-import { clearTitleBarColor, colorTitleBar } from './ui/titleBarColor';
 
 function currentName(settings: Settings): string | undefined {
 	return resolveProjectName(
@@ -62,11 +61,7 @@ export function activate(context: vscode.ExtensionContext): void {
 				announce();
 			}
 		}),
-		vscode.commands.registerCommand('ntWindowTitle.announceProjectName', announce),
-		vscode.commands.registerCommand('ntWindowTitle.colorTitleBar', () =>
-			colorTitleBar(readSettings().statusBar.color)
-		),
-		vscode.commands.registerCommand('ntWindowTitle.clearTitleBarColor', clearTitleBarColor)
+		vscode.commands.registerCommand('ntWindowTitle.announceProjectName', announce)
 	);
 
 	refresh();

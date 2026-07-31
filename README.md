@@ -8,8 +8,6 @@ That is the whole extension. It holds one status-bar item, one decoration type, 
 
 Run **Window Title nt: Announce Project Name** to see it without switching windows; it is worth binding to a key if you like it.
 
-**Window Title nt: Color Title Bar For This Project** turns VS Code's Command Center into a colored pill around the project name. An extension cannot draw in the title bar, so this writes the same `window.commandCenter` and `workbench.colorCustomizations` settings you would write by hand — into the _workspace_, which usually means a `.vscode/settings.json` your team may see. It asks first, merges rather than overwriting your existing customizations, and **Clear Title Bar Color** removes only its own keys.
-
 ### One unsupported thing, on purpose
 
 Decoration attachments expose no `fontSize`. Any `fontSizePercent` above 100 is applied by appending a declaration to `textDecoration`, which VS Code passes through as raw CSS. That is **undocumented behaviour**, and it is the only thing in this extension that relies on something Microsoft has not promised.

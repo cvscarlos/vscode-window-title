@@ -3,7 +3,7 @@
 	"displayName": "Window Title nt",
 	"icon": "images/icon.png",
 	"description": "Shows the project name in the status bar and announces it in the editor when the window gains focus, so you can tell your VS Code windows apart",
-	"version": "2.3.0",
+	"version": "2.4.0",
 	"publisher": "nokotata",
 	"license": "MIT",
 	"repository": {
@@ -100,14 +100,6 @@
 			{
 				"command": "ntWindowTitle.announceProjectName",
 				"title": "Window Title nt: Announce Project Name"
-			},
-			{
-				"command": "ntWindowTitle.colorTitleBar",
-				"title": "Window Title nt: Color Title Bar For This Project"
-			},
-			{
-				"command": "ntWindowTitle.clearTitleBarColor",
-				"title": "Window Title nt: Clear Title Bar Color"
 			}
 		]
 	},

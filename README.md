@@ -2,9 +2,13 @@
 
 **Know which project a VS Code window belongs to, at a glance.**
 
-When you keep a window open per repository, the folder name buried in the title bar is easy to miss. This extension puts the project name in the status bar, in cyan, where it is always visible — and **briefly makes it prominent when the window gains focus**, so you notice which project you just switched to.
+When you keep a window open per repository, the folder name buried in the title bar is easy to miss. This extension puts the project name in the status bar, in cyan, where it is always visible — and **announces it inside the editor when the window gains focus**, so you notice which project you just switched to without looking away from your code.
 
-That is the whole extension. It holds one status-bar item, three event subscriptions, and **no timer except while a flash is on screen** — about a second. It performs **no filesystem or network I/O** and has **no runtime dependencies**. The badge is recomputed only when the workspace folders or its own settings change.
+That is the whole extension. It holds one status-bar item, one decoration type, three event subscriptions, and **no timer except while an announcement is on screen** — about a second. It performs **no filesystem or network I/O** and has **no runtime dependencies**. The badge is recomputed only when the workspace folders or its own settings change.
+
+Run **Window Title nt: Announce Project Name** to see it without switching windows; it is worth binding to a key if you like it.
+
+Two honest caveats. The announcement needs a **visible text editor** — nothing appears on the Welcome tab or the Settings UI, where the status-bar badge still carries the name. And the status-bar flash uses `statusBarItem.warningBackground`, one of only two background colors VS Code allows on a status-bar item; in themes that rebind `editorWarning.foreground` close to your badge color (Dracula Soft, for one) the flash is nearly invisible. The editor announcement is the one whose color is entirely ours, so it looks the same in every theme.
 
 ## Why it does not draw over the window
 
@@ -16,19 +20,25 @@ It worked, and it reverted cleanly, but it made VS Code report **"Your Code inst
 
 If you want that back, the honest options are a fork of VS Code, or an extension like Custom UI Style that makes the same trade explicitly. This one will not modify your installation.
 
-The focus flash is the supported substitute: it uses `statusBarItem.warningBackground`, one of only two background colors VS Code honours on a status-bar item, so the badge becomes a filled pill for a moment. That means the flash colour comes from your theme rather than from `statusBar.color`.
+The supported substitute is a **text-editor decoration**: the project name is drawn at the end of the first visible line for about a second. It is the only surface in the API that renders where you are actually looking without taking focus, changing the editor layout, or leaving anything behind.
+
+Opening a tab and closing it — like the Welcome page appearing on every alt-tab — was considered and rejected. `preserveFocus` stops keyboard focus moving but not the editor swap: VS Code opens the panel with `activation: RESTORE`, so the webview still becomes the visible tab. Every window switch would hide your file and restore it, create and destroy a webview, and churn the tab bar and `Ctrl+Tab` history.
 
 ## Settings
 
-| Setting                                     | Default     | Description                                                                                                                          |
-| ------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `ntWindowTitle.label`                       | `""`        | Name to show instead of the folder name. Set it per project in workspace settings when the folder name is not the name you think in. |
-| `ntWindowTitle.statusBar.enabled`           | `true`      | Show the badge.                                                                                                                      |
-| `ntWindowTitle.statusBar.alignment`         | `"left"`    | Which end of the status bar the badge sits on.                                                                                       |
-| `ntWindowTitle.statusBar.color`             | `"#22D3EE"` | Hex color, or a theme color id such as `terminal.ansiCyan` to follow the active theme.                                               |
-| `ntWindowTitle.statusBar.icon`              | `"window"`  | Codicon shown before the name. Empty for none.                                                                                       |
-| `ntWindowTitle.statusBar.flashOnFocus`      | `true`      | Briefly make the badge prominent when the window gains focus.                                                                        |
-| `ntWindowTitle.statusBar.flashMilliseconds` | `1200`      | How long the flash lasts. Clamped to 200–10000.                                                                                      |
+| Setting                                         | Default     | Description                                                                                                                          |
+| ----------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `ntWindowTitle.label`                           | `""`        | Name to show instead of the folder name. Set it per project in workspace settings when the folder name is not the name you think in. |
+| `ntWindowTitle.statusBar.enabled`               | `true`      | Show the badge.                                                                                                                      |
+| `ntWindowTitle.statusBar.alignment`             | `"left"`    | Which end of the status bar the badge sits on.                                                                                       |
+| `ntWindowTitle.statusBar.color`                 | `"#22D3EE"` | Hex color, or a theme color id such as `terminal.ansiCyan` to follow the active theme.                                               |
+| `ntWindowTitle.statusBar.icon`                  | `"window"`  | Codicon shown before the name. Empty for none.                                                                                       |
+| `ntWindowTitle.statusBar.flashOnFocus`          | `true`      | Briefly make the badge prominent when the window gains focus.                                                                        |
+| `ntWindowTitle.statusBar.flashMilliseconds`     | `1200`      | How long the flash lasts. Clamped to 200–10000.                                                                                      |
+| `ntWindowTitle.editorAnnouncement.enabled`      | `true`      | Announce the project name in the editor on focus.                                                                                    |
+| `ntWindowTitle.editorAnnouncement.milliseconds` | `1200`      | How long it stays. Clamped to 200–10000.                                                                                             |
+| `ntWindowTitle.editorAnnouncement.color`        | `""`        | Hex color or theme color id. Empty reuses `statusBar.color`.                                                                         |
+| `ntWindowTitle.editorAnnouncement.uppercase`    | `true`      | Announce in capitals.                                                                                                                |
 
 The name shown is the explicit `label` if set, otherwise the open folder's name, otherwise the workspace name for a multi-root workspace. An empty window shows nothing.
 

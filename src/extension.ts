@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { CONFIG_SECTION, readSettings, type Settings } from './configuration/settings';
 import { resolveProjectName } from './project/projectName';
+import { EditorAnnouncement } from './ui/editorAnnouncement';
 import { ProjectStatusBar } from './ui/statusBar';
 
 function currentName(settings: Settings): string | undefined {
@@ -10,16 +11,42 @@ function currentName(settings: Settings): string | undefined {
 	);
 }
 
+/**
+ * Whether this window-state change is the user switching *into* this window.
+ *
+ * `onDidChangeWindowState` also fires when `WindowState.active` changes, which is
+ * driven by a ten-second user-idle timer — so testing `state.focused` on its own
+ * announces during ordinary work in a window that never lost focus.
+ */
+export function isFocusGain(previous: boolean, next: boolean): boolean {
+	return !previous && next;
+}
+
 export function activate(context: vscode.ExtensionContext): void {
 	const statusBar = new ProjectStatusBar();
+	const announcement = new EditorAnnouncement();
 
 	const refresh = (): void => {
 		const settings = readSettings();
 		statusBar.update(currentName(settings), settings.statusBar);
 	};
 
+	const announce = (): void => {
+		const settings = readSettings();
+		const name = currentName(settings);
+		if (name !== undefined) {
+			announcement.announce(name, settings.editorAnnouncement);
+		}
+		statusBar.flash();
+	};
+
+	// The window is focused at activation, so the first transition to watch for is
+	// away and back.
+	let focused = vscode.window.state.focused;
+
 	context.subscriptions.push(
 		statusBar,
+		announcement,
 		vscode.workspace.onDidChangeConfiguration((event) => {
 			if (event.affectsConfiguration(CONFIG_SECTION)) {
 				refresh();
@@ -27,13 +54,14 @@ export function activate(context: vscode.ExtensionContext): void {
 		}),
 		// The name can change without any settings change.
 		vscode.workspace.onDidChangeWorkspaceFolders(refresh),
-		// Only a transition INTO focus announces; losing focus is silent, and the
-		// window that is already focused at startup is not announced either.
 		vscode.window.onDidChangeWindowState((state) => {
-			if (state.focused) {
-				statusBar.flash();
+			const gained = isFocusGain(focused, state.focused);
+			focused = state.focused;
+			if (gained) {
+				announce();
 			}
-		})
+		}),
+		vscode.commands.registerCommand('ntWindowTitle.announceProjectName', announce)
 	);
 
 	refresh();

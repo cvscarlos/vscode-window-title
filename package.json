@@ -2,8 +2,8 @@
 	"name": "nt-window-title",
 	"displayName": "Window Title nt",
 	"icon": "images/icon.png",
-	"description": "Shows the project name in the status bar and flashes it when the window gains focus, so you can tell your VS Code windows apart",
-	"version": "2.1.0",
+	"description": "Shows the project name in the status bar and announces it in the editor when the window gains focus, so you can tell your VS Code windows apart",
+	"version": "2.2.0",
 	"publisher": "nokotata",
 	"license": "MIT",
 	"repository": {
@@ -68,9 +68,35 @@
 					"type": "number",
 					"default": 1200,
 					"description": "How long the flash lasts. Clamped to 200-10000."
+				},
+				"ntWindowTitle.editorAnnouncement.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Briefly show the project name inside the editor when the window gains focus. Nothing is shown when no text editor is visible, such as on the Welcome tab."
+				},
+				"ntWindowTitle.editorAnnouncement.milliseconds": {
+					"type": "number",
+					"default": 1200,
+					"description": "How long the announcement stays on screen. Clamped to 200-10000."
+				},
+				"ntWindowTitle.editorAnnouncement.color": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "Color of the announcement. A hex color or a theme color id such as `terminal.ansiCyan`. Leave empty to reuse `#ntWindowTitle.statusBar.color#` so the badge and the announcement agree."
+				},
+				"ntWindowTitle.editorAnnouncement.uppercase": {
+					"type": "boolean",
+					"default": true,
+					"description": "Render the announced name in capitals."
 				}
 			}
-		}
+		},
+		"commands": [
+			{
+				"command": "ntWindowTitle.announceProjectName",
+				"title": "Window Title nt: Announce Project Name"
+			}
+		]
 	},
 	"scripts": {
 		"prepare": "git config core.hooksPath .githooks || true",

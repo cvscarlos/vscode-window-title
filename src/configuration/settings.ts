@@ -5,6 +5,7 @@ export const CONFIG_SECTION = 'ntWindowTitle';
 const DEFAULT_STATUS_BAR_COLOR = '#22D3EE';
 const DEFAULT_ICON = 'window';
 const DEFAULT_FLASH_MILLISECONDS = 1200;
+const DEFAULT_ANNOUNCEMENT_MILLISECONDS = 1200;
 
 export type StatusBarSide = 'left' | 'right';
 
@@ -20,9 +21,18 @@ export interface StatusBarSettings {
 	flashMilliseconds: number;
 }
 
+export interface EditorAnnouncementSettings {
+	enabled: boolean;
+	milliseconds: number;
+	/** Hex color or theme color id — already validated. */
+	color: string;
+	uppercase: boolean;
+}
+
 export interface Settings {
 	label: string;
 	statusBar: StatusBarSettings;
+	editorAnnouncement: EditorAnnouncementSettings;
 }
 
 const HEX_COLOR = /^#(?:[\dA-Fa-f]{3,4}|[\dA-Fa-f]{6}|[\dA-Fa-f]{8})$/;
@@ -85,15 +95,34 @@ function readBoolean(
 export function readSettings(): Settings {
 	const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
 
+	const statusBarColor = sanitizeColor(
+		readString(config, 'statusBar.color', DEFAULT_STATUS_BAR_COLOR),
+		DEFAULT_STATUS_BAR_COLOR
+	);
+
+	// An unset announcement color reuses the badge's, so the two agree by default.
+	const announcementColor = readString(config, 'editorAnnouncement.color', '').trim();
+
 	return {
 		label: readString(config, 'label', '').trim(),
+		editorAnnouncement: {
+			enabled: readBoolean(config, 'editorAnnouncement.enabled', true),
+			milliseconds: clampNumber(
+				readNumber(config, 'editorAnnouncement.milliseconds', DEFAULT_ANNOUNCEMENT_MILLISECONDS),
+				200,
+				10_000,
+				DEFAULT_ANNOUNCEMENT_MILLISECONDS
+			),
+			color:
+				announcementColor === ''
+					? statusBarColor
+					: sanitizeColor(announcementColor, statusBarColor),
+			uppercase: readBoolean(config, 'editorAnnouncement.uppercase', true),
+		},
 		statusBar: {
 			enabled: readBoolean(config, 'statusBar.enabled', true),
 			alignment: readString(config, 'statusBar.alignment', 'left') === 'right' ? 'right' : 'left',
-			color: sanitizeColor(
-				readString(config, 'statusBar.color', DEFAULT_STATUS_BAR_COLOR),
-				DEFAULT_STATUS_BAR_COLOR
-			),
+			color: statusBarColor,
 			icon: sanitizeCodicon(readString(config, 'statusBar.icon', DEFAULT_ICON)),
 			flashOnFocus: readBoolean(config, 'statusBar.flashOnFocus', true),
 			flashMilliseconds: clampNumber(

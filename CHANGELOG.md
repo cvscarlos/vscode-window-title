@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.0
+
+**Breaking: the centered overlay and the title-bar pill are removed, and the extension no longer modifies your VS Code installation.**
+
+Both features worked by adding a stylesheet and a script to VS Code's `workbench.html`, because the extension API offers no overlay or title-bar surface. That file is checksummed by VS Code, so a patched installation permanently reported _"Your Code installation appears to be corrupt. Please reinstall."_ — and again after every update. The warning was accurate, and silencing it would have meant suppressing a true integrity check, so the feature was withdrawn instead.
+
+**If you ran 1.0.0 with either feature enabled, revert it before upgrading.** Run _Window Title nt: Remove In-Window Display_ on 1.0.0 and reload. Version 2.0.0 contains no patcher, so it cannot undo a patch an earlier version left behind — upgrading without reverting first would strand the modification, and the corrupt-installation warning with it. 1.0.0 was never published to the Marketplace, so in practice this affects only installations built from source.
+
+To recover an already-upgraded installation, delete `nt-window-title.css` and `nt-window-title.js` next to VS Code's `workbench.html` and remove the two `<!-- nt-window-title:begin … -->` blocks from that file; reinstalling VS Code also works.
+
+- Removed the centered focus HUD, the title-bar pill, all six commands, and the fourteen `hud.*` / `titleBarPill.*` settings.
+- Removed the workbench patcher, the generated assets, the invisible-marker name channel and the output channel — none of it has a purpose without the patch.
+- The status-bar badge is unchanged: name, color, alignment, icon and the per-project `label` override all behave as before.
+
 ## 1.0.0
 
 First release.

@@ -1,13 +1,11 @@
 import * as vscode from 'vscode';
 import { isHexColor, type StatusBarSettings, type StatusBarSide } from '../configuration/settings';
-import { NAME_CLOSE, NAME_OPEN } from '../hud/markers';
 
 /**
- * The always-visible project badge.
+ * The project badge.
  *
- * Deliberately timer-free: the badge only changes when the workspace or the
- * settings change, so at rest it costs nothing. Announcing a focus change is the
- * HUD's job, inside the renderer.
+ * Deliberately timer-free: it changes only when the workspace or the settings
+ * change, so at rest it costs nothing.
  */
 export class ProjectStatusBar {
 	private item: vscode.StatusBarItem | undefined;
@@ -49,8 +47,7 @@ export class ProjectStatusBar {
 		const item = this.ensureItem(settings.alignment);
 		const icon = settings.icon === '' ? '' : `$(${settings.icon}) `;
 
-		// The markers wrap the name only, so the HUD reads it back exactly.
-		item.text = `${icon}${NAME_OPEN}${name}${NAME_CLOSE}`;
+		item.text = `${icon}${name}`;
 		item.tooltip = `Project: ${name}`;
 		item.color = isHexColor(settings.color)
 			? settings.color

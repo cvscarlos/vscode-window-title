@@ -2,8 +2,8 @@
 	"name": "nt-window-title",
 	"displayName": "Window Title nt",
 	"icon": "images/icon.png",
-	"description": "Announces the project name when a VS Code window gains focus — a centered HUD plus a always-visible status-bar badge",
-	"version": "1.0.0",
+	"description": "Shows the project name in the status bar, so you can tell your VS Code windows apart",
+	"version": "2.0.0",
 	"publisher": "nokotata",
 	"license": "MIT",
 	"repository": {
@@ -20,48 +20,13 @@
 		"workspace",
 		"project name",
 		"status bar",
-		"multiple windows",
-		"focus"
+		"multiple windows"
 	],
 	"activationEvents": [
 		"onStartupFinished"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
-		"commands": [
-			{
-				"command": "ntWindowTitle.enableHud",
-				"title": "Window Title nt: Enable Centered HUD"
-			},
-			{
-				"command": "ntWindowTitle.disableHud",
-				"title": "Window Title nt: Disable Centered HUD"
-			},
-			{
-				"command": "ntWindowTitle.enableTitleBarPill",
-				"title": "Window Title nt: Enable Title Bar Pill"
-			},
-			{
-				"command": "ntWindowTitle.disableTitleBarPill",
-				"title": "Window Title nt: Disable Title Bar Pill"
-			},
-			{
-				"command": "ntWindowTitle.reapplyInjection",
-				"title": "Window Title nt: Re-apply In-Window Display"
-			},
-			{
-				"command": "ntWindowTitle.removeInWindowDisplay",
-				"title": "Window Title nt: Remove In-Window Display"
-			},
-			{
-				"command": "ntWindowTitle.restoreWorkbench",
-				"title": "Window Title nt: Restore Workbench From Backup"
-			},
-			{
-				"command": "ntWindowTitle.showOutput",
-				"title": "Window Title nt: Show Output"
-			}
-		],
 		"configuration": {
 			"title": "Window Title nt",
 			"properties": {
@@ -73,7 +38,7 @@
 				"ntWindowTitle.statusBar.enabled": {
 					"type": "boolean",
 					"default": true,
-					"description": "Show the project name permanently in the status bar. The centered HUD reads the name from this item, so turning it off also disables the HUD's most reliable name source."
+					"description": "Show the project name in the status bar."
 				},
 				"ntWindowTitle.statusBar.alignment": {
 					"type": "string",
@@ -93,107 +58,6 @@
 					"type": "string",
 					"default": "window",
 					"markdownDescription": "Codicon name shown before the project name — see the [codicon list](https://microsoft.github.io/vscode-codicons/dist/codicon.html). Leave empty for no icon."
-				},
-				"ntWindowTitle.hud.enabled": {
-					"type": "boolean",
-					"scope": "application",
-					"default": false,
-					"markdownDescription": "Flash the project name over the middle of the window when it gains focus.\n\n**This works by modifying your VS Code installation** (it adds two files next to `workbench.html` and references them from it). VS Code will report that its installation \"appears to be corrupt\" — that warning is expected and dismissible. A VS Code update wipes the change; the extension re-applies it automatically. Use *Window Title nt: Disable Centered HUD* to revert cleanly."
-				},
-				"ntWindowTitle.hud.showOnWindowOpen": {
-					"type": "boolean",
-					"scope": "application",
-					"default": true,
-					"description": "Also flash the name shortly after a window opens, not only when it regains focus."
-				},
-				"ntWindowTitle.hud.displayMilliseconds": {
-					"type": "number",
-					"scope": "application",
-					"default": 1100,
-					"description": "How long the HUD stays on screen before fading out. Clamped to 200-10000."
-				},
-				"ntWindowTitle.hud.position": {
-					"type": "string",
-					"scope": "application",
-					"enum": [
-						"center",
-						"top"
-					],
-					"default": "center",
-					"description": "Where the HUD appears."
-				},
-				"ntWindowTitle.hud.fontSizePixels": {
-					"type": "number",
-					"scope": "application",
-					"default": 40,
-					"description": "HUD text size in pixels. Clamped to 10-200."
-				},
-				"ntWindowTitle.hud.uppercase": {
-					"type": "boolean",
-					"scope": "application",
-					"default": true,
-					"description": "Render the HUD name in capitals."
-				},
-				"ntWindowTitle.hud.color": {
-					"type": "string",
-					"scope": "application",
-					"default": "",
-					"markdownDescription": "Color of the centered overlay text. Either a hex color (`#22D3EE`) or a theme color id (`terminal.ansiCyan`, `charts.blue`), which follows your active theme. Leave empty to reuse `#ntWindowTitle.statusBar.color#` so the badge and the overlay agree."
-				},
-				"ntWindowTitle.hud.fontFamily": {
-					"type": "string",
-					"scope": "application",
-					"enum": [
-						"mono",
-						"ui"
-					],
-					"default": "mono",
-					"markdownDescription": "Typeface for the centered overlay. `mono` uses a monospace stack, which suits a project name announced on its own. `ui` inherits the font VS Code uses for its own interface."
-				},
-				"ntWindowTitle.titleBarPill.enabled": {
-					"type": "boolean",
-					"scope": "application",
-					"default": false,
-					"markdownDescription": "Show the project name as a filled pill in the title bar, styled like VS Code's own \"Update\" and \"Sign in\" pills.\n\n**This works by modifying your VS Code installation** — the same change the centered HUD uses, so enabling both costs nothing extra. See `#ntWindowTitle.hud.enabled#` for what that involves."
-				},
-				"ntWindowTitle.titleBarPill.position": {
-					"type": "string",
-					"scope": "application",
-					"enum": [
-						"right",
-						"center",
-						"left"
-					],
-					"default": "right",
-					"description": "Which part of the title bar the pill sits in. 'right' is where VS Code puts its own Update and Sign in pills."
-				},
-				"ntWindowTitle.titleBarPill.color": {
-					"type": "string",
-					"scope": "application",
-					"default": "",
-					"description": "Hex background color for the pill. Leave empty to use the theme's button colors, which is what makes it look native. The text color is derived automatically so it stays readable."
-				},
-				"ntWindowTitle.titleBarPill.uppercase": {
-					"type": "boolean",
-					"scope": "application",
-					"default": false,
-					"description": "Render the pill text in capitals."
-				},
-				"ntWindowTitle.titleBarPill.fontFamily": {
-					"type": "string",
-					"scope": "application",
-					"enum": [
-						"ui",
-						"mono"
-					],
-					"default": "ui",
-					"markdownDescription": "Typeface for the title-bar pill. `ui` inherits the font VS Code uses for its own interface, so the pill reads as part of the window title next to it — and matches the built-in Update and Sign in pills. `mono` uses a monospace stack."
-				},
-				"ntWindowTitle.titleBarPill.bordered": {
-					"type": "boolean",
-					"scope": "application",
-					"default": true,
-					"markdownDescription": "Outline the pill. VS Code's own pills border in their own background color, so their border is invisible — which makes the pill disappear when your title bar happens to be the same color as it. The outline uses the pill's text color, so it always contrasts. Turn this off for a pill visually identical to the built-in ones."
 				}
 			}
 		}
@@ -225,11 +89,5 @@
 		"eslint-plugin-unicorn": "^72.0.0",
 		"prettier": "^3.8.4",
 		"typescript": "^6.0.3"
-	},
-	"capabilities": {
-		"untrustedWorkspaces": {
-			"supported": false,
-			"description": "Showing the project name inside the window modifies the VS Code installation, so this extension stays disabled until you trust the workspace."
-		}
 	}
 }
